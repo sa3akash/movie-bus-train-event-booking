@@ -12,7 +12,7 @@ export function AdminTopbar() {
     <header className="sticky top-0 z-50 flex h-16 shrink-0 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-md">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="-ml-1" />
-        <span className="font-semibold text-lg hidden md:block">Dashboard</span>
+        <span className="font-semibold text-lg hidden md:block">TICKET MANAGEMENT</span>
       </div>
 
       <div className="ml-auto flex items-center gap-4">

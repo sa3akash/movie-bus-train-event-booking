@@ -2,7 +2,7 @@ import { createId } from "@paralleldrive/cuid2";
 import { timestamp, varchar } from "drizzle-orm/pg-core";
 
 export const generateId = {
-  id: varchar("id")
+  id: varchar("id", { length: 36 })
     .$defaultFn(() => createId())
     .primaryKey(),
 };

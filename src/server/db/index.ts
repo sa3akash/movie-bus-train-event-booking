@@ -8,13 +8,20 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: 20,
   idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
 export const db = drizzle({ client: pool, schema });
 
+pool.on("error", (err) => {
+  logger.error({ err }, "Unexpected PostgreSQL pool error");
+});
+
 export const connectDb = async () => {
   try {
-    await pool.connect();
+    const client = await pool.connect();
+    await client.query("SELECT 1");
+    client.release();
     logger.info("Database connected");
   } catch (error) {
     logger.error({ error }, "Failed to connect to database");
@@ -30,3 +37,6 @@ export const disconnectDb = async () => {
     logger.error({ error }, "Failed to disconnect from database");
   }
 };
+
+export * from "./schemas";
+

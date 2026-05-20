@@ -152,7 +152,7 @@ export default function AdminDashboard() {
   return (
     <div className="flex flex-col gap-8 pb-8">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 p-8 text-white shadow-lg">
+      <div className="relative overflow-hidden rounded-2xl bg-linear-to-br from-violet-600 via-indigo-600 to-blue-600 p-8 text-white shadow-lg">
         <div className="relative z-10 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-white/90">
