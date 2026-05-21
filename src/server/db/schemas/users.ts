@@ -9,9 +9,9 @@ import {
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { defaultColumns } from "./defaultKey";
-import { userVarificationTypeEnum } from "./enum";
-import { bookings, payments } from "./booking";
-import { reviews, reviewLikes, wishlist, userRewards } from "./reviews";
+import { bookings, userCoupons } from "./booking";
+import { reviews, wishlist, reviewLikes, userRewards, rewardTransactions } from "./reviews";
+import { auditLogs, analyticsEvents } from "./audit";
 
 export const roles = pgTable("roles", {
   ...defaultColumns,
@@ -44,7 +44,8 @@ export const rolePermissions = pgTable("role_permissions", {
     .notNull()
     .references(() => permissions.id, { onDelete: "cascade" }),
 }, (t) => [
-  primaryKey({ columns: [t.roleId, t.permissionId] })
+  primaryKey({ columns: [t.roleId, t.permissionId] }),
+  index("idx_role_permissions_permission_id").on(t.permissionId),
 ]);
 
 export const userRoles = pgTable("user_roles", {
@@ -59,7 +60,8 @@ export const userRoles = pgTable("user_roles", {
   assignedAt: timestamp("assigned_at", { withTimezone: true }).defaultNow(),
 
 }, (t) => [
-  primaryKey({ columns: [t.userId, t.roleId] })
+  primaryKey({ columns: [t.userId, t.roleId] }),
+  index("idx_user_roles_role_id").on(t.roleId),
 ]);
 
 
@@ -89,7 +91,9 @@ export const usersTable = pgTable("users", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   failedLoginAttempts: integer("failed_login_attempts").default(0),
   lockedUntil: timestamp("locked_until", { withTimezone: true }),
-});
+}, (t) => [
+  index("idx_users_deleted_at").on(t.deletedAt),
+]);
 
 export const userSessionTable = pgTable("user_sessions", {
   ...defaultColumns,
@@ -125,12 +129,44 @@ export const userVerificationTable = pgTable("user_verification", {
 ]);
 
 
-export const usersRelations = relations(usersTable, ({ many }) => ({
+export const userRolesRelations = relations(userRoles, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [userRoles.userId],
+    references: [usersTable.id],
+  }),
+  role: one(roles, {
+    fields: [userRoles.roleId],
+    references: [roles.id],
+  }),
+}));
+
+export const userSessionsRelations = relations(userSessionTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [userSessionTable.userId],
+    references: [usersTable.id],
+  }),
+}));
+
+export const userVerificationRelations = relations(userVerificationTable, ({ one }) => ({
+  user: one(usersTable, {
+    fields: [userVerificationTable.userId],
+    references: [usersTable.id],
+  }),
+}));
+
+export const usersRelations = relations(usersTable, ({ many, one }) => ({
   sessions: many(userSessionTable),
   roles: many(userRoles),
   verifications: many(userVerificationTable),
   bookings: many(bookings),
   wishlist: many(wishlist),
+  reviews: many(reviews),
+  userCoupons: many(userCoupons),
+  reviewLikes: many(reviewLikes),
+  rewards: one(userRewards),
+  rewardTransactions: many(rewardTransactions),
+  auditLogs: many(auditLogs),
+  analyticsEvents: many(analyticsEvents),
 }));
 
 export const rolesRelations = relations(roles, ({ many }) => ({

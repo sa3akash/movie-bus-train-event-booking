@@ -5,7 +5,7 @@ import { movieStatusEnum, showStatusEnum } from "./enum";
 import { cinemaScreens } from "./cinemas";
 import { bookings } from "./booking";
 import { showSeats } from "./seats";
-import { reviews } from "./reviews";
+import { reviews, wishlist } from "./reviews";
 
 export const genres = pgTable("genres", {
   ...defaultColumns,
@@ -43,21 +43,21 @@ export const movies = pgTable("movies", {
     index("idx_movies_release_date").on(table.releaseDate),
     index("idx_movies_rating").on(table.rating),
     index("idx_movies_price").on(table.price),
+    index("idx_movies_deleted_at").on(table.deletedAt),
 ])
 
 export const movieToGenres = pgTable("movie_to_genres", {
-    movieId: varchar("movie_id", { length: 255 }).notNull().references(() => movies.id, { onDelete: "cascade" }),
-    genreId: varchar("genre_id", { length: 255 }).notNull().references(() => genres.id, { onDelete: "cascade" }),
+    movieId: varchar("movie_id", { length: 36 }).notNull().references(() => movies.id, { onDelete: "cascade" }),
+    genreId: varchar("genre_id", { length: 36 }).notNull().references(() => genres.id, { onDelete: "cascade" }),
 }, (table) => [
-    index("idx_movie_to_genres_movie_id").on(table.movieId),
     index("idx_movie_to_genres_genre_id").on(table.genreId),
     primaryKey({ columns: [table.movieId, table.genreId] }),
 ]);
 
 export const shows = pgTable('shows', {
     ...defaultColumns,
-    movieId: varchar("movie_id", { length: 255 }).notNull().references(()=>movies.id, { onDelete: "cascade" }),
-    screenId: varchar("screen_id", { length: 255 }).notNull().references(()=>cinemaScreens.id, { onDelete: "cascade" }),
+    movieId: varchar("movie_id", { length: 36 }).notNull().references(()=>movies.id, { onDelete: "cascade" }),
+    screenId: varchar("screen_id", { length: 36 }).notNull().references(()=>cinemaScreens.id, { onDelete: "cascade" }),
     startTime: timestamp("start_time").notNull(),
     endTime: timestamp("end_time").notNull(),
     basePrice: decimal("base_price", { precision: 10, scale: 2 }).notNull(),
@@ -68,6 +68,7 @@ export const shows = pgTable('shows', {
     index("idx_shows_movie_id").on(table.movieId),
     index("idx_shows_screen_id").on(table.screenId),
     index("idx_shows_start_time").on(table.startTime),
+    index("idx_shows_deleted_at").on(table.deletedAt),
 ])
 
 export const genresRelations = relations(genres, ({ many }) => ({
@@ -102,4 +103,5 @@ export const showsRelations = relations(shows, ({ one, many }) => ({
   }),
   showSeats: many(showSeats),
   bookings: many(bookings),
+  waitlist: many(wishlist),
 }));

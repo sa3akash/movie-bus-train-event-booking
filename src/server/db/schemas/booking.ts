@@ -5,16 +5,17 @@ import { usersTable } from "./users";
 import { shows } from "./movie";
 import { showSeats } from "./seats";
 import { bookingStatusEnum, couponDiscountTypeEnum, paymentMethodEnum, paymentStatusEnum } from "./enum";
+import { reviews, rewardTransactions } from "./reviews";
 
 export const bookings = pgTable(
     "bookings",
     {
         ...defaultColumns,
         bookingNumber: varchar("booking_number", { length: 255 }).unique().notNull(),
-        userId: varchar("user_id", { length: 255 })
+        userId: varchar("user_id", { length: 36 })
             .references(() => usersTable.id, { onDelete: "restrict" })
             .notNull(),
-        showId: varchar("show_id", { length: 255 })
+        showId: varchar("show_id", { length: 36 })
             .references(() => shows.id, { onDelete: "restrict" })
             .notNull(),
         subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
@@ -36,7 +37,6 @@ export const bookings = pgTable(
         checkedInAt: timestamp("checked_in_at"),
     },
     (table) => [
-        index("bookings_user_idx").on(table.userId),
         index("bookings_show_idx").on(table.showId),
         index("bookings_status_idx").on(table.status),
         index("bookings_user_status_idx").on(table.userId, table.status),
@@ -49,10 +49,10 @@ export const payments = pgTable(
     {
         ...defaultColumns,
         paymentNumber: text("payment_number").unique().notNull(),
-        bookingId: varchar("booking_id", { length: 255 })
+        bookingId: varchar("booking_id", { length: 36 })
             .references(() => bookings.id, { onDelete: "restrict" })
             .notNull(),
-        userId: varchar("user_id", { length: 255 })
+        userId: varchar("user_id", { length: 36 })
             .references(() => usersTable.id, { onDelete: "restrict" })
             .notNull(),
         amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
@@ -115,13 +115,13 @@ export const userCoupons = pgTable(
   "user_coupons",
   {
     ...defaultColumns,
-    userId: varchar("user_id", { length: 255 })
+    userId: varchar("user_id", { length: 36 })
       .references(() => usersTable.id, { onDelete: "cascade" })
       .notNull(),
-    couponId: varchar("coupon_id", { length: 255 })
+    couponId: varchar("coupon_id", { length: 36 })
       .references(() => coupons.id, { onDelete: "cascade" })
       .notNull(),
-    bookingId: varchar("booking_id", { length: 255 }).references(() => bookings.id, {
+    bookingId: varchar("booking_id", { length: 36 }).references(() => bookings.id, {
       onDelete: "set null",
     }),
     usedAt: timestamp("used_at").defaultNow().notNull(),
@@ -131,7 +131,6 @@ export const userCoupons = pgTable(
     }).notNull(),
   },
   (table) => [
-    index("user_coupons_user_idx").on(table.userId),
     index("user_coupons_coupon_idx").on(table.couponId),
     uniqueIndex("user_coupons_unique_idx").on(table.userId, table.couponId, table.bookingId),
   ]
@@ -149,6 +148,8 @@ export const bookingsRelations = relations(bookings, ({ one, many }) => ({
   payments: many(payments),
   userCoupons: many(userCoupons),
   showSeats: many(showSeats),
+  reviews: many(reviews),
+  rewardTransactions: many(rewardTransactions),
 }));
 
 export const paymentsRelations = relations(payments, ({ one }) => ({

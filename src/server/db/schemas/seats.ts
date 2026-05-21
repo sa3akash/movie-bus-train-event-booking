@@ -5,6 +5,7 @@ import { boolean, decimal, index, integer, pgTable, varchar } from "drizzle-orm/
 import { seatStatusEnum } from "./enum";
 import { shows } from "./movie";
 import { bookings } from "./booking";
+import { wishlist } from "./reviews";
 
 export const seatType = pgTable('seat_type', {
     ...defaultColumns,
@@ -18,11 +19,11 @@ export const seatType = pgTable('seat_type', {
 
 export const seats = pgTable('seats', {
     ...defaultColumns,
-    screenId: varchar("screen_id", { length: 255 }).notNull().references(()=>cinemaScreens.id, { onDelete: "cascade" }),
+    screenId: varchar("screen_id", { length: 36 }).notNull().references(()=>cinemaScreens.id, { onDelete: "cascade" }),
     row: varchar("row", { length: 10 }).notNull(),
     number: integer("number").notNull(),
     name: varchar("name", { length: 10 }),
-    seatTypeId: varchar("seat_type_id", { length: 255 }).references(() => seatType.id),    
+    seatTypeId: varchar("seat_type_id", { length: 36 }).references(() => seatType.id),    
     capacity: integer("capacity").default(1).notNull(),
     posX: decimal("pos_x", { precision: 10, scale: 2 }).default("0").notNull(),
     posY: decimal("pos_y", { precision: 10, scale: 2 }).default("0").notNull(),
@@ -45,9 +46,9 @@ export const seats = pgTable('seats', {
 
 export const showSeats = pgTable('show_seats', {
     ...defaultColumns,
-    showId: varchar("show_id", { length: 255 }).notNull().references(()=>shows.id, { onDelete: "cascade" }),
-    seatId: varchar("seat_id", { length: 255 }).notNull().references(()=>seats.id, { onDelete: "cascade" }),
-    bookingId: varchar("booking_id", { length: 255 }).references(() => bookings.id, { onDelete: "set null" }),
+    showId: varchar("show_id", { length: 36 }).notNull().references(()=>shows.id, { onDelete: "cascade" }),
+    seatId: varchar("seat_id", { length: 36 }).notNull().references(()=>seats.id, { onDelete: "cascade" }),
+    bookingId: varchar("booking_id", { length: 36 }).references(() => bookings.id, { onDelete: "set null" }),
     status: seatStatusEnum("status").notNull().default("AVAILABLE"),
 },(table)=>[
     index("idx_show_seats_show_id").on(table.showId),
@@ -57,6 +58,7 @@ export const showSeats = pgTable('show_seats', {
 
 export const seatTypeRelations = relations(seatType, ({ many }) => ({
     seats: many(seats),
+    waitlists: many(wishlist),
 }));
 
 export const seatsRelations = relations(seats, ({ one, many }) => ({

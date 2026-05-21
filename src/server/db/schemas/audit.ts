@@ -11,7 +11,7 @@ export const auditLogs = pgTable(
   "audit_logs",
   {
     ...defaultColumns,
-    userId: varchar("user_id", { length: 255 }).references(
+    userId: varchar("user_id", { length: 36 }).references(
       () => usersTable.id,
       {
         onDelete: "set null",
@@ -19,7 +19,7 @@ export const auditLogs = pgTable(
     ),
     action: text("action").notNull(), // CREATE, UPDATE, DELETE, VIEW, LOGIN, LOGOUT
     entityType: text("entity_type").notNull(), // booking, payment, user, etc.
-    entityId: varchar("entity_id", { length: 255 }),
+    entityId: varchar("entity_id", { length: 36 }),
     oldData: jsonb("old_data"),
     newData: jsonb("new_data"),
     ipAddress: text("ip_address"),
@@ -41,7 +41,7 @@ export const analyticsEvents = pgTable(
   "analytics_events",
   {
     ...defaultColumns,
-    userId: varchar("user_id", { length: 255 }).references(
+    userId: varchar("user_id", { length: 36 }).references(
       () => usersTable.id,
       {
         onDelete: "set null",

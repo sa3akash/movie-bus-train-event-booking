@@ -20,13 +20,13 @@ export const reviews = pgTable(
   "reviews",
   {
     ...defaultColumns,
-    userId: varchar("user_id", { length: 255 })
+    userId: varchar("user_id", { length: 36 })
       .references(() => usersTable.id, { onDelete: "cascade" })
       .notNull(),
-    movieId: varchar("movie_id", { length: 255 })
+    movieId: varchar("movie_id", { length: 36 })
       .references(() => movies.id, { onDelete: "cascade" })
       .notNull(),
-    bookingId: varchar("booking_id", { length: 255 }).references(() => bookings.id, {
+    bookingId: varchar("booking_id", { length: 36 }).references(() => bookings.id, {
       onDelete: "set null",
     }),
     rating: integer("rating").notNull(), // 1-5
@@ -38,7 +38,6 @@ export const reviews = pgTable(
     isApproved: boolean("is_approved").default(true),
   },
   (table) => [
-    index("reviews_user_idx").on(table.userId),
     index("reviews_movie_idx").on(table.movieId),
     index("reviews_rating_idx").on(table.rating),
     uniqueIndex("reviews_user_movie_unique_idx").on(
@@ -52,10 +51,10 @@ export const reviewLikes = pgTable(
   "review_likes",
   {
     ...defaultColumns,
-    reviewId: varchar("review_id", { length: 255 })
+    reviewId: varchar("review_id", { length: 36 })
       .references(() => reviews.id, { onDelete: "cascade" })
       .notNull(),
-    userId: varchar("user_id", { length: 255 })
+    userId: varchar("user_id", { length: 36 })
       .references(() => usersTable.id, { onDelete: "cascade" })
       .notNull(),
   },
@@ -69,13 +68,13 @@ export const wishlist = pgTable(
   "waitlist",
   {
     ...defaultColumns,
-    showId: varchar("show_id", { length: 255 })
+    showId: varchar("show_id", { length: 36 })
       .references(() => shows.id, { onDelete: "cascade" })
       .notNull(),
-    userId: varchar("user_id", { length: 255 })
+    userId: varchar("user_id", { length: 36 })
       .references(() => usersTable.id, { onDelete: "cascade" })
       .notNull(),
-    seatPreference: varchar("seat_preference", { length: 255 }).references(() => seatType.id),
+    seatPreference: varchar("seat_preference", { length: 36 }).references(() => seatType.id),
     numberOfSeats: integer("number_of_seats").notNull(),
     status: waitlistStatusEnum("status").default("ACTIVE").notNull(),
     notifiedAt: timestamp("notified_at"),
@@ -95,7 +94,7 @@ export const userRewards = pgTable(
   "user_rewards",
   {
     ...defaultColumns,
-    userId: varchar("user_id", { length: 255 })
+    userId: varchar("user_id", { length: 36 })
       .references(() => usersTable.id, { onDelete: "cascade" })
       .unique()
       .notNull(),
@@ -117,10 +116,10 @@ export const rewardTransactions = pgTable(
   "reward_transactions",
   {
     ...defaultColumns,
-    userId: varchar("user_id", { length: 255 })
+    userId: varchar("user_id", { length: 36 })
       .references(() => usersTable.id, { onDelete: "cascade" })
       .notNull(),
-    bookingId: varchar("booking_id", { length: 255 }).references(() => bookings.id, {
+    bookingId: varchar("booking_id", { length: 36 }).references(() => bookings.id, {
       onDelete: "set null",
     }),
     points: integer("points").notNull(), // Positive for earning, negative for redemption

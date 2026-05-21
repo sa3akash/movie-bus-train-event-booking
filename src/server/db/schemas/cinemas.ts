@@ -2,6 +2,8 @@ import { boolean, decimal, index, integer, jsonb, pgTable, text, timestamp, varc
 import { defaultColumns } from "./defaultKey";
 import { screenTypeEnum } from "./enum";
 import { relations } from "drizzle-orm";
+import { shows } from "./movie";
+import { seats } from "./seats";
 
 export const cineplexChain = pgTable("cineplex_chain", {
   ...defaultColumns,
@@ -19,11 +21,12 @@ export const cineplexChain = pgTable("cineplex_chain", {
   index("idx_cineplex_chain_name").on(table.name),
   index("idx_cineplex_chain_total_cinemas").on(table.totalCinemas),
   index("idx_cineplex_chain_is_active").on(table.isActive),
+  index("idx_cineplex_chain_deleted_at").on(table.deletedAt),
 ]);
 
 export const theatersTable = pgTable("theaters", {
   ...defaultColumns,
-  cineplexChainId: varchar("cineplex_chain_id", { length: 255 }).references(() => cineplexChain.id),
+  cineplexChainId: varchar("cineplex_chain_id", { length: 36 }).references(() => cineplexChain.id),
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   description: text("description"),
@@ -51,11 +54,12 @@ export const theatersTable = pgTable("theaters", {
   index("idx_theaters_state").on(table.state),
   index("idx_theaters_cineplex_chain_id").on(table.cineplexChainId),
   index("idx_theaters_is_active").on(table.isActive),
+  index("idx_theaters_deleted_at").on(table.deletedAt),
 ]);
 
 export const theaterImages = pgTable("theater_images", {
   ...defaultColumns,
-  theaterId: varchar("theater_id", { length: 255 }).notNull().references(() => theatersTable.id),
+  theaterId: varchar("theater_id", { length: 36 }).notNull().references(() => theatersTable.id),
   src: varchar("src", { length: 500 }).notNull(),
   alt: varchar("alt", { length: 255 }).notNull(),
   width: integer("width").notNull(),
@@ -66,7 +70,7 @@ export const theaterImages = pgTable("theater_images", {
 
 export const cinemaScreens = pgTable("cinema_screens", {
   ...defaultColumns,
-  theatreId: varchar("theatre_id", { length: 255 }).notNull().references(() => theatersTable.id),
+  theatreId: varchar("theatre_id", { length: 36 }).notNull().references(() => theatersTable.id),
   name: varchar("name", { length: 255 }).notNull(),
   screenType: screenTypeEnum("screen_type").notNull().default("STANDARD"),
   totalSeats: integer("total_seats").notNull().default(0),
@@ -85,6 +89,7 @@ export const cinemaScreens = pgTable("cinema_screens", {
 }, (table) => [
   index("idx_cinema_screens_theatre_id").on(table.theatreId),
   index("idx_cinema_screens_screen_type").on(table.screenType),
+  index("idx_cinema_screens_deleted_at").on(table.deletedAt),
 ]);
 
 export const cineplexChainRelations = relations(cineplexChain, ({ many }) => ({
@@ -107,9 +112,11 @@ export const theaterImagesRelations = relations(theaterImages, ({ one }) => ({
   }),
 }));
 
-export const cinemaScreensRelations = relations(cinemaScreens, ({ one }) => ({
+export const cinemaScreensRelations = relations(cinemaScreens, ({ one, many }) => ({
   theatre: one(theatersTable, {
     fields: [cinemaScreens.theatreId],
     references: [theatersTable.id],
   }),
+  shows: many(shows),
+  seats: many(seats),
 }));
