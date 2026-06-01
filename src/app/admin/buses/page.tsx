@@ -1,3 +1,3 @@
-import BusesPage from "@/admin/buses/page";
+import BusesPage from "../../../../public/admin/buses/page";
 
 export default BusesPage;

@@ -1,15 +1,40 @@
 import { db } from '@/server/db'
 import { theatersTable, cinemaScreens, cineplexChain } from '@/server/db/schemas'
-import { eq, and, ilike, isNull } from 'drizzle-orm'
+import { eq, and, or, ilike, isNull, count } from 'drizzle-orm'
 import { status } from 'elysia'
 import type { CinemaModel } from './model'
 
 export abstract class CinemaService {
-	static async listChains() {
-		return await db
+	static async listChains(params: { page?: number; limit?: number; search?: string } = {}) {
+		const page = params.page || 1
+		const limit = params.limit || 10
+		const offset = (page - 1) * limit
+
+		const conditions = [isNull(cineplexChain.deletedAt)]
+		if (params.search) {
+			conditions.push(ilike(cineplexChain.name, `%${params.search}%`))
+		}
+
+		const [totalRes] = await db
+			.select({ count: count() })
+			.from(cineplexChain)
+			.where(and(...conditions))
+		const total = Number(totalRes?.count || 0)
+
+		const items = await db
 			.select()
 			.from(cineplexChain)
-			.where(isNull(cineplexChain.deletedAt))
+			.where(and(...conditions))
+			.limit(limit)
+			.offset(offset)
+
+		return {
+			items,
+			total,
+			page,
+			limit,
+			pages: Math.ceil(total / limit),
+		}
 	}
 
 	static async createChain(data: CinemaModel['createChainBody']) {
@@ -127,11 +152,58 @@ export abstract class CinemaService {
 		return await query
 	}
 
-	static async listAdminTheaters() {
-		return await db
+	static async listAdminTheaters(params: {
+		page?: number
+		limit?: number
+		search?: string
+		cineplexChainId?: string
+		city?: string
+		isActive?: string
+	} = {}) {
+		const page = params.page || 1
+		const limit = params.limit || 10
+		const offset = (page - 1) * limit
+
+		const conditions = [isNull(theatersTable.deletedAt)]
+		if (params.cineplexChainId) {
+			conditions.push(eq(theatersTable.cineplexChainId, params.cineplexChainId))
+		}
+		if (params.city) {
+			conditions.push(eq(theatersTable.city, params.city))
+		}
+		if (params.isActive) {
+			conditions.push(eq(theatersTable.isActive, params.isActive === 'true'))
+		}
+		if (params.search) {
+			conditions.push(
+				or(
+					ilike(theatersTable.name, `%${params.search}%`),
+					ilike(theatersTable.city, `%${params.search}%`),
+					ilike(theatersTable.address, `%${params.search}%`)
+				)
+			)
+		}
+
+		const [totalRes] = await db
+			.select({ count: count() })
+			.from(theatersTable)
+			.where(and(...conditions))
+		const total = Number(totalRes?.count || 0)
+
+		const items = await db
 			.select()
 			.from(theatersTable)
-			.where(isNull(theatersTable.deletedAt))
+			.where(and(...conditions))
+			.limit(limit)
+			.offset(offset)
+
+		return {
+			items,
+			total,
+			page,
+			limit,
+			pages: Math.ceil(total / limit),
+		}
 	}
 
 	static async findTheaterBySlug(slug: string) {
@@ -166,8 +238,43 @@ export abstract class CinemaService {
 			)
 	}
 
-	static async listAllAdminScreens() {
-		return await db
+	static async listAllAdminScreens(params: {
+		page?: number
+		limit?: number
+		search?: string
+		cineplexChainId?: string
+		theatreId?: string
+	} = {}) {
+		const page = params.page || 1
+		const limit = params.limit || 10
+		const offset = (page - 1) * limit
+
+		const conditions = [isNull(cinemaScreens.deletedAt)]
+		if (params.theatreId) {
+			conditions.push(eq(cinemaScreens.theatreId, params.theatreId))
+		}
+		if (params.cineplexChainId) {
+			conditions.push(eq(theatersTable.cineplexChainId, params.cineplexChainId))
+		}
+		if (params.search) {
+			conditions.push(
+				or(
+					ilike(cinemaScreens.name, `%${params.search}%`),
+					ilike(cinemaScreens.screenType, `%${params.search}%`)
+				)
+			)
+		}
+
+		const countQuery = db
+			.select({ count: count() })
+			.from(cinemaScreens)
+			.innerJoin(theatersTable, eq(cinemaScreens.theatreId, theatersTable.id))
+			.where(and(...conditions))
+
+		const [totalRes] = await countQuery
+		const total = Number(totalRes?.count || 0)
+
+		const selectQuery = db
 			.select({
 				id: cinemaScreens.id,
 				theatreId: cinemaScreens.theatreId,
@@ -177,7 +284,20 @@ export abstract class CinemaService {
 				isActive: cinemaScreens.isActive,
 			})
 			.from(cinemaScreens)
-			.where(isNull(cinemaScreens.deletedAt))
+			.innerJoin(theatersTable, eq(cinemaScreens.theatreId, theatersTable.id))
+			.where(and(...conditions))
+			.limit(limit)
+			.offset(offset)
+
+		const items = await selectQuery
+
+		return {
+			items,
+			total,
+			page,
+			limit,
+			pages: Math.ceil(total / limit),
+		}
 	}
 
 	static async createTheater(data: CinemaModel['createTheaterBody']) {
@@ -209,6 +329,12 @@ export abstract class CinemaService {
 				wheelchairAccessible: data.wheelchairAccessible ?? false,
 				foodAllowed: data.foodAllowed ?? true,
 				isActive: true,
+				latitude: data.latitude ?? null,
+				longitude: data.longitude ?? null,
+				facilities: data.facilities ?? [],
+				pincode: data.pincode ?? null,
+				country: data.country ?? "Bangladesh",
+				contactNumber: data.contactNumber ?? null,
 			})
 			.returning()
 
@@ -279,6 +405,12 @@ export abstract class CinemaService {
 				wheelchairAccessible: data.wheelchairAccessible !== undefined ? data.wheelchairAccessible : undefined,
 				foodAllowed: data.foodAllowed !== undefined ? data.foodAllowed : undefined,
 				isActive: data.isActive !== undefined ? data.isActive : undefined,
+				latitude: data.latitude !== undefined ? data.latitude : undefined,
+				longitude: data.longitude !== undefined ? data.longitude : undefined,
+				facilities: data.facilities !== undefined ? data.facilities : undefined,
+				pincode: data.pincode !== undefined ? data.pincode : undefined,
+				country: data.country !== undefined ? data.country : undefined,
+				contactNumber: data.contactNumber !== undefined ? data.contactNumber : undefined,
 			})
 			.where(eq(theatersTable.id, id))
 			.returning()

@@ -378,6 +378,157 @@ export default function CineplexPage() {
     }
   };
 
+  const handleEditTheater = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTheater || !editTheaterName.trim()) return;
+
+    const slug = editTheaterName
+      .toLowerCase()
+      .replace(/\s+/g, "-")
+      .replace(/[^a-z0-9-]/g, "");
+
+    try {
+      const res = await fetch(`/api/cinema/${editingTheater.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cineplexChainId: editTheaterChainId || null,
+          name: editTheaterName,
+          slug,
+          address: editTheaterAddress || null,
+          city: editTheaterCity,
+          state: editTheaterCity + " Division",
+          phone: editTheaterPhone || null,
+          email: editTheaterEmail || null,
+          isActive: editTheaterActive,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to update branch");
+      }
+
+      toast.success("Cinema branch updated successfully");
+      setIsEditTheaterDialogOpen(false);
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update branch");
+    }
+  };
+
+  const handleEditScreen = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingScreen || !editScreenName.trim()) return;
+
+    try {
+      const res = await fetch(`/api/cinema/screens/${editingScreen.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editScreenName,
+          screenType: editScreenType,
+          totalSeats: editScreenSeats,
+          isActive: editScreenActive,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to update cinema hall");
+      }
+
+      toast.success("Cinema hall updated successfully");
+      setIsEditScreenDialogOpen(false);
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to update cinema hall");
+    }
+  };
+
+  // Handlers for deleting items
+  const handleDeleteChain = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this Cineplex Chain? All associated branch locations will remain but become independent.")) return;
+
+    try {
+      const res = await fetch(`/api/cinema/chains/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to delete chain");
+      }
+
+      toast.success("Cineplex chain deleted successfully");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete chain");
+    }
+  };
+
+  const handleDeleteTheater = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this Cinema Branch?")) return;
+
+    try {
+      const res = await fetch(`/api/cinema/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to delete branch");
+      }
+
+      toast.success("Cinema branch deleted successfully");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete branch");
+    }
+  };
+
+  const handleDeleteScreen = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this Cinema Hall?")) return;
+
+    try {
+      const res = await fetch(`/api/cinema/screens/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Failed to delete cinema hall");
+      }
+
+      toast.success("Cinema hall deleted successfully");
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete cinema hall");
+    }
+  };
+
+  // Filter Functions
+  const filteredTheaters = theaters.filter((theater) => {
+    const matchesChain = selectedChainId === "all" || theater.cineplexChainId === selectedChainId;
+    const matchesSearch =
+      theater.name.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
+      theater.city.toLowerCase().includes(searchTerm.toLowerCase().trim());
+    return matchesChain && matchesSearch;
+  });
+
+  const filteredScreens = screens.filter((screen) => {
+    const theater = theaters.find((t) => t.id === screen.theatreId);
+    if (!theater) return false;
+
+    const matchesChain = selectedChainId === "all" || theater.cineplexChainId === selectedChainId;
+    const matchesTheater = selectedTheaterId === "all" || screen.theatreId === selectedTheaterId;
+    const matchesSearch =
+      screen.name.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
+      screen.screenType.toLowerCase().includes(searchTerm.toLowerCase().trim());
+
+    return matchesChain && matchesTheater && matchesSearch;
+  });
+
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6 lg:p-8">
       {/* Page Header */}
@@ -393,11 +544,11 @@ export default function CineplexPage() {
         <div className="flex flex-wrap gap-2">
           {/* Add Chain Button */}
           <Dialog open={isChainDialogOpen} onOpenChange={setIsChainDialogOpen}>
-            <DialogTrigger asChild>
+            <DialogTrigger render={
               <Button variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50">
                 <Plus className="mr-2 h-4 w-4" /> Add Chain
               </Button>
-            </DialogTrigger>
+            } />
             <DialogContent className="sm:max-w-[425px]">
               <form onSubmit={handleAddChain}>
                 <DialogHeader>
@@ -466,11 +617,11 @@ export default function CineplexPage() {
 
           {/* Add Branch Button */}
           <Dialog open={isTheaterDialogOpen} onOpenChange={setIsTheaterDialogOpen}>
-            <DialogTrigger asChild>
+            <DialogTrigger render={
               <Button variant="outline" className="border-violet-200 text-violet-700 hover:bg-violet-50">
                 <Building2 className="mr-2 h-4 w-4" /> Add Branch
               </Button>
-            </DialogTrigger>
+            } />
             <DialogContent className="sm:max-w-[450px]">
               <form onSubmit={handleAddTheater}>
                 <DialogHeader>
@@ -559,11 +710,11 @@ export default function CineplexPage() {
 
           {/* Add Screen Button */}
           <Dialog open={isScreenDialogOpen} onOpenChange={setIsScreenDialogOpen}>
-            <DialogTrigger asChild>
+            <DialogTrigger render={
               <Button className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-sm">
                 <Tv className="mr-2 h-4 w-4" /> Add Cinema Hall
               </Button>
-            </DialogTrigger>
+            } />
             <DialogContent className="sm:max-w-[425px]">
               <form onSubmit={handleAddScreen}>
                 <DialogHeader>

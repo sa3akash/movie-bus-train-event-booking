@@ -1,3 +1,3 @@
-import MoviesPage from "@/admin/movies/page";
+import MoviesPage from "../../../../public/admin/movies/page";
 
 export default MoviesPage;

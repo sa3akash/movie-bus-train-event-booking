@@ -1,3 +1,3 @@
-import TransactionsPage from "@/admin/transactions/page";
+import TransactionsPage from "../../../../public/admin/transactions/page";
 
 export default TransactionsPage;

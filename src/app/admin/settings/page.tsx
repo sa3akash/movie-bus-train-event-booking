@@ -1,3 +1,3 @@
-import SettingsPage from "@/admin/settings/page";
+import SettingsPage from "../../../../public/admin/settings/page";
 
 export default SettingsPage;

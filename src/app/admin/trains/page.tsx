@@ -1,3 +1,3 @@
-import TrainsPage from "@/admin/trains/page";
+import TrainsPage from "../../../../public/admin/trains/page";
 
 export default TrainsPage;

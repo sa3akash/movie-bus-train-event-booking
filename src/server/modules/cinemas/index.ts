@@ -21,34 +21,37 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 	)
 	.get(
 		'/chains',
-		async () => {
-			return await CinemaService.listChains()
+		async ({ query }) => {
+			return await CinemaService.listChains(query)
 		},
 		{
+			query: CinemaModel.paginationQuery,
 			response: {
-				200: CinemaModel.listChainsResponse,
+				200: CinemaModel.paginatedChainsResponse,
 			},
 		}
 	)
 	.get(
 		'/admin-theaters',
-		async () => {
-			return await CinemaService.listAdminTheaters()
+		async ({ query }) => {
+			return await CinemaService.listAdminTheaters(query)
 		},
 		{
+			query: CinemaModel.theaterQuery,
 			response: {
-				200: CinemaModel.listAdminTheatersResponse,
+				200: CinemaModel.paginatedAdminTheatersResponse,
 			},
 		}
 	)
 	.get(
 		'/screens',
-		async () => {
-			return await CinemaService.listAllAdminScreens()
+		async ({ query }) => {
+			return await CinemaService.listAllAdminScreens(query)
 		},
 		{
+			query: CinemaModel.screenQuery,
 			response: {
-				200: CinemaModel.listAllAdminScreensResponse,
+				200: CinemaModel.paginatedAllAdminScreensResponse,
 			},
 		}
 	)
