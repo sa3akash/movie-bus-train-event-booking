@@ -6,6 +6,7 @@ import { cinemaScreens } from "./cinemas";
 import { bookings } from "./booking";
 import { showSeats } from "./seats";
 import { reviews, wishlist } from "./reviews";
+import { movieActors } from "./actor";
 
 export const genres = pgTable("genres", {
   ...defaultColumns,
@@ -79,6 +80,7 @@ export const moviesRelations = relations(movies, ({ many }) => ({
   shows: many(shows),
   reviews: many(reviews),
   movieToGenres: many(movieToGenres),
+  movieActors: many(movieActors),
 }));
 
 export const movieToGenresRelations = relations(movieToGenres, ({ one }) => ({
