@@ -1,3 +1,9 @@
-import ConcertsPage from "../../../../public/admin/concerts/page";
+import React from 'react'
 
-export default ConcertsPage;
+const page = () => {
+  return (
+    <div>page</div>
+  )
+}
+
+export default page

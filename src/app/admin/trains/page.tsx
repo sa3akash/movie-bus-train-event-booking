@@ -1,3 +1,9 @@
-import TrainsPage from "../../../../public/admin/trains/page";
+import React from 'react'
 
-export default TrainsPage;
+const page = () => {
+  return (
+    <div>page</div>
+  )
+}
+
+export default page

@@ -10,6 +10,7 @@ import { payment } from "./modules/payment";
 import { review } from "./modules/review";
 import { ticket } from "./modules/ticket";
 import { admin } from "./modules/admin";
+import { busses } from "./modules/busses";
 import { openapi } from '@elysia/openapi'
 
 export const app = new Elysia({ prefix: "/api", aot: true })
@@ -32,6 +33,7 @@ export const app = new Elysia({ prefix: "/api", aot: true })
   .use(review)
   .use(ticket)
   .use(admin)
+  .use(busses)
   .get("/", "Hello Nextjs from elysiajs!")
 
 process.on("SIGINT", async () => {

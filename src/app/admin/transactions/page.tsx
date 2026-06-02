@@ -1,3 +1,9 @@
-import TransactionsPage from "../../../../public/admin/transactions/page";
+import React from 'react'
 
-export default TransactionsPage;
+const page = () => {
+  return (
+    <div>page</div>
+  )
+}
+
+export default page

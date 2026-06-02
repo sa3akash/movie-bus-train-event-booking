@@ -1,3 +1,9 @@
-import UsersPage from "../../../../public/admin/users/page";
+import React from 'react'
 
-export default UsersPage;
+const page = () => {
+  return (
+    <div>page</div>
+  )
+}
+
+export default page

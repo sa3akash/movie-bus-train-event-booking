@@ -28,8 +28,18 @@ interface FormValues {
 const CURRENCIES = ["BDT", "USD", "EUR", "INR", "GBP"];
 
 const PREDEFINED_COLORS = [
-  "#ef4444", "#f97316", "#eab308", "#22c55e",
-  "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"
+  // Reds & Oranges
+  "#ef4444", "#dc2626", "#f97316", "#ea580c",
+  // Yellows & Greens
+  "#f59e0b", "#eab308", "#84cc16", "#22c55e",
+  // Teals & Blues
+  "#14b8a6", "#06b6d4", "#0ea5e9", "#3b82f6",
+  // Indigos & Violets
+  "#6366f1", "#4f46e5", "#8b5cf6", "#7c3aed",
+  // Pinks & Roses
+  "#d946ef", "#ec4899", "#f43f5e", "#e11d48",
+  // Neutrals & Darks
+  "#0f172a", "#334155", "#64748b", "#94a3b8"
 ];
 
 export function SeatTypeFormDialog({
@@ -130,7 +140,7 @@ export function SeatTypeFormDialog({
                 control={control}
                 render={({ field }) => (
                   <Popover>
-                    <PopoverTrigger asChild>
+                    <PopoverTrigger >
                       <Button
                         variant="outline"
                         className="w-full h-10 justify-start text-left px-3 hover:bg-slate-50 transition-all font-medium border-slate-200 dark:border-slate-800"
@@ -144,23 +154,23 @@ export function SeatTypeFormDialog({
                         </span>
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-64 p-4 rounded-xl shadow-2xl border-slate-100 dark:border-slate-800" align="start">
+                    <PopoverContent className="w-[280px] p-4 rounded-xl shadow-2xl border-slate-100 dark:border-slate-800" align="start">
                       <div className="flex flex-col gap-4">
                         <div className="flex items-center gap-2 text-sm font-bold text-slate-800 dark:text-slate-200">
                           <Palette className="w-4 h-4 text-indigo-500" /> Color Picker
                         </div>
                         
                         {/* Swatches Grid */}
-                        <div className="grid grid-cols-4 gap-2.5">
+                        <div className="grid grid-cols-6 gap-2">
                           {PREDEFINED_COLORS.map((c) => {
                             const isSelected = field.value.toLowerCase() === c.toLowerCase();
                             return (
                               <button
                                 key={c}
                                 type="button"
-                                className={`h-10 w-full rounded-lg border shadow-xs transition-all flex items-center justify-center ${
+                                className={`h-8 w-full rounded-md border shadow-xs transition-all flex items-center justify-center ${
                                   isSelected 
-                                    ? "ring-2 ring-indigo-500 ring-offset-2 scale-105" 
+                                    ? "ring-2 ring-indigo-500 ring-offset-2 scale-110" 
                                     : "hover:scale-110 hover:shadow-md"
                                 }`}
                                 style={{ backgroundColor: c }}
