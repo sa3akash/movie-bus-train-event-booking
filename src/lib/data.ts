@@ -1712,7 +1712,7 @@ export const busLayout: BusLayout = {
 }
 
 
-export const busSleeperLayout: BusLayout = {
+export const planeLayout: BusLayout = {
   "rows": 11,
   "columns": 5,
   "seats": [
@@ -1723,8 +1723,7 @@ export const busSleeperLayout: BusLayout = {
       "y": 0,
       "type": "seat",
       "isActive": false,
-      "isAccessible": false,
-      "bookedGender": "female"
+      "isAccessible": false
     },
     {
       "row": "B",
@@ -1734,7 +1733,6 @@ export const busSleeperLayout: BusLayout = {
       "type": "seat",
       "isActive": false,
       "isAccessible": false,
-      "bookedGender": "female"
     },
     {
       "row": "A",
@@ -1744,7 +1742,6 @@ export const busSleeperLayout: BusLayout = {
       "type": "seat",
       "isActive": false,
       "isAccessible": false,
-      "bookedGender": "male"
     },
     {
       "row": "C",
