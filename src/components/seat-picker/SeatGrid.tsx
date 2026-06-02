@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { ProcessedSeat, TierMeta } from "./types";
 import { CELL_SIZE } from "./constants";
 import { SeatItem } from "./SeatItem";
@@ -23,6 +23,12 @@ export const SeatGrid = React.memo(
     tierMeta,
     onToggleSeat,
   }: SeatGridProps) => {
+    const rowLabels = useMemo(() => {
+      const map = new Map<number, string>();
+      processedSeats.forEach((s) => map.set(s.row, s.rowLabel));
+      return Array.from(map.entries());
+    }, [processedSeats]);
+
     return (
       <div className="w-max mx-auto">
         {/* NUMBERS */}
@@ -49,6 +55,24 @@ export const SeatGrid = React.memo(
             gridTemplateRows: `repeat(${rowSpan},${CELL_SIZE}px)`,
           }}
         >
+          {/* ROW LABELS */}
+          {rowLabels.map(([rowIdx, label]) => (
+            <React.Fragment key={`row-labels-${rowIdx}`}>
+              <div
+                className="flex items-center justify-end text-xs text-slate-500 font-bold pr-2 select-none"
+                style={{ gridColumnStart: 1, gridRowStart: rowIdx }}
+              >
+                {label}
+              </div>
+              <div
+                className="flex items-center justify-start text-xs text-slate-500 font-bold pl-2 select-none"
+                style={{ gridColumnStart: columns + 2, gridRowStart: rowIdx }}
+              >
+                {label}
+              </div>
+            </React.Fragment>
+          ))}
+
           {processedSeats.map((s) => (
             <SeatItem
               key={s.id}

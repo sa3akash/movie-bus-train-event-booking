@@ -35,6 +35,7 @@ export default function DynamicSeatPicker({
       col: s.x + 2,
       row: s.y - minY + 1,
       num: s.seatNumber,
+      rowLabel: s.row,
     }));
   }, [seats, tier, minY]);
 

@@ -39,4 +39,5 @@ export interface ProcessedSeat {
   col: number;
   row: number;
   num: number;
+  rowLabel: string;
 }

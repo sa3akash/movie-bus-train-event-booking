@@ -25,7 +25,7 @@ export const Minimap: React.FC<MinimapProps> = ({
   const isScrollable =
     viewport.scrollWidth > viewport.width + 1 ||
     viewport.scrollHeight > viewport.height + 1;
-  
+
   const isVisible = isScrollable && (isScrolling || isHovered);
 
   const sWidth = viewport.scrollWidth || 1;
@@ -61,10 +61,10 @@ export const Minimap: React.FC<MinimapProps> = ({
           className="relative rounded-md overflow-hidden cursor-crosshair bg-slate-950 border border-slate-800 shadow-inner"
           style={{
             aspectRatio: `${sWidth} / ${sHeight}`,
-            width: mapAspectRatio > 1 ? "180px" : "auto",
-            height: mapAspectRatio <= 1 ? "180px" : "auto",
-            maxWidth: "240px",
-            maxHeight: "240px",
+            width: mapAspectRatio > 1 ? "140px" : "auto",
+            height: mapAspectRatio <= 1 ? "140px" : "auto",
+            maxWidth: "140px",
+            maxHeight: "140px",
           }}
           onClick={(e) => {
             const rect = e.currentTarget.getBoundingClientRect();
@@ -87,8 +87,8 @@ export const Minimap: React.FC<MinimapProps> = ({
                   selectedSeats.has(s.id)
                     ? "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]"
                     : bookedSeats.has(s.id)
-                    ? "bg-slate-800"
-                    : "bg-slate-500/70"
+                      ? "bg-slate-800"
+                      : "bg-slate-500/70"
                 }`}
                 style={{
                   left: `${(leftPx / sWidth) * 100}%`,

@@ -97,7 +97,7 @@ export const ScrollAreaWithMinimap: React.FC<ScrollAreaWithMinimapProps> = ({
     <>
       <div
         ref={containerRef}
-        className="overflow-auto py-4"
+        className="overflow-auto py-4 max-h-[calc(100dvh-220px)] md:max-h-full"
       >
         {children}
       </div>
