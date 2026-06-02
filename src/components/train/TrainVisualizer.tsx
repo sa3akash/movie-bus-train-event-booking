@@ -122,7 +122,7 @@ export const TrainVisualizer = ({
 
       {/* ── Distant mountains ── */}
       <svg
-        className="absolute bottom-[5.5rem] left-0 w-full pointer-events-none"
+        className="absolute bottom-22 left-0 w-full pointer-events-none"
         viewBox="0 0 1200 120"
         preserveAspectRatio="none"
         style={{ height: "80px", opacity: 0.6 }}
@@ -148,7 +148,7 @@ export const TrainVisualizer = ({
 
       {/* ── Tree silhouettes ── */}
       <svg
-        className="absolute bottom-[5rem] pointer-events-none"
+        className="absolute bottom-20 pointer-events-none"
         style={{ left: "2%", height: "48px", width: "120px", opacity: 0.6 }}
         viewBox="0 0 120 48"
       >
@@ -260,28 +260,42 @@ export const TrainVisualizer = ({
       >
         <div className="flex items-end flex-nowrap" style={{ gap: 0 }}>
 
-          {/* ──────────── Locomotive (Minimal Premium) ──────────── */}
+          {/* ──────────── Locomotive (Classic Luxury Metallic) ──────────── */}
           <div className="flex items-end shrink-0">
             <div
               className="relative shrink-0"
               style={{
-                width: "clamp(8rem, 12vw, 11rem)",
-                height: "clamp(4.2rem, 6.5vw, 5.8rem)",
-                marginBottom: "18px",
+                width: "clamp(9rem, 14vw, 12rem)",
+                height: "clamp(4.5rem, 6.8vw, 5.8rem)",
+                marginBottom: "22px",
+                transform: "scale(1)",
               }}
             >
-              {/* Main loco body */}
+              {/* Main loco body (Deep Steel Blue Metallic) */}
               <div
                 className="absolute inset-0"
                 style={{
-                  borderRadius: "2.5rem 6px 2px 2px",
-                  background: "linear-gradient(160deg, #1e293b 0%, #0f172a 40%, #020617 100%)",
-                  border: "1px solid #334155",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.9), inset 0 1px 0 rgba(255,255,255,0.05)",
+                  borderRadius: "3rem 6px 3px 3px",
+                  background: "linear-gradient(160deg, #1e3a5f 0%, #0f2540 40%, #081326 100%)",
+                  border: "1px solid #0284c7",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.1)",
                   overflow: "hidden",
                 }}
               >
-                {/* Front nose cowl highlight */}
+                {/* Roof curve highlight */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    height: "15%",
+                    background: "linear-gradient(to bottom, rgba(255,255,255,0.15), transparent)",
+                    pointerEvents: "none",
+                  }}
+                />
+                
+                {/* Front nose highlight */}
                 <div
                   style={{
                     position: "absolute",
@@ -289,27 +303,71 @@ export const TrainVisualizer = ({
                     left: "0",
                     width: "40%",
                     height: "100%",
-                    background: "linear-gradient(90deg, rgba(255,255,255,0.03), transparent)",
+                    background: "linear-gradient(90deg, rgba(255,255,255,0.08), transparent)",
                     pointerEvents: "none",
                   }}
                 />
 
-                {/* Cab window (sleek dark tint) */}
+                {/* Thick colored horizontal band */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "55%",
+                    left: 0,
+                    right: 0,
+                    height: "8px",
+                    background: "#38bdf8",
+                    boxShadow: "0 0 10px rgba(56,189,248,0.5)",
+                    borderTop: "1px solid rgba(255,255,255,0.2)",
+                    borderBottom: "1px solid rgba(0,0,0,0.3)",
+                  }}
+                />
+
+                {/* Number plate printed on body */}
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "65%",
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    fontSize: "10px",
+                    fontWeight: 900,
+                    color: "rgba(255,255,255,0.85)",
+                    letterSpacing: "0.2em",
+                    textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+                  }}
+                >
+                  ENG-1
+                </div>
+
+                {/* Cab window (Warm interior glow) */}
                 <div
                   style={{
                     position: "absolute",
                     left: "14px",
-                    top: "8px",
+                    top: "14%",
                     width: "35%",
-                    height: "55%",
+                    height: "35%",
                     borderRadius: "1rem 0 0.2rem 0",
-                    background: "linear-gradient(145deg, #020617 0%, #000000 100%)",
-                    border: "1px solid #1e293b",
-                    boxShadow: "inset 0 2px 6px rgba(0,0,0,0.9)",
+                    background: "linear-gradient(135deg, #fef08a 0%, #ca8a04 100%)",
+                    border: "1px solid #000000",
+                    boxShadow: "inset 0 2px 6px rgba(0,0,0,0.8), 0 0 15px rgba(253,224,71,0.3)",
                     overflow: "hidden",
                   }}
                 >
-                  {/* window glare */}
+                  {/* window silhouette */}
+                  <div
+                    style={{
+                      position: "absolute",
+                      bottom: "-2px",
+                      right: "10%",
+                      width: "40%",
+                      height: "60%",
+                      background: "rgba(0,0,0,0.6)",
+                      borderRadius: "4px 4px 0 0",
+                    }}
+                  />
+                  {/* Glass glare */}
                   <div
                     style={{
                       position: "absolute",
@@ -317,7 +375,7 @@ export const TrainVisualizer = ({
                       left: 0,
                       width: "100%",
                       height: "40%",
-                      background: "linear-gradient(to bottom right, rgba(255,255,255,0.08), transparent)",
+                      background: "linear-gradient(to bottom, rgba(255,255,255,0.4), transparent)",
                     }}
                   />
                 </div>
@@ -327,55 +385,40 @@ export const TrainVisualizer = ({
                   style={{
                     position: "absolute",
                     right: "12px",
-                    top: "10px",
+                    top: "14%",
                     width: "18%",
-                    height: "35%",
+                    height: "30%",
                     borderRadius: "2px",
-                    background: "#020617",
-                    border: "1px solid #1e293b",
-                  }}
-                />
-
-                {/* Minimal accent line */}
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "12px",
-                    left: 0,
-                    right: 0,
-                    height: "1px",
-                    background: "#38bdf8",
-                    opacity: 0.8,
-                    boxShadow: "0 0 8px rgba(56,189,248,0.5)",
-                  }}
-                />
-
-                {/* Number plate */}
-                <div
-                  style={{
-                    position: "absolute",
-                    bottom: "3px",
-                    right: "8px",
-                    fontSize: "7px",
-                    fontWeight: 800,
-                    color: "#64748b",
-                    letterSpacing: "0.2em",
+                    background: "linear-gradient(135deg, #fef08a 0%, #ca8a04 100%)",
+                    border: "1px solid #000000",
+                    boxShadow: "inset 0 2px 6px rgba(0,0,0,0.8)",
+                    overflow: "hidden",
                   }}
                 >
-                  ENG-1
+                   {/* Glass glare */}
+                   <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: "40%",
+                      background: "linear-gradient(to bottom, rgba(255,255,255,0.4), transparent)",
+                    }}
+                  />
                 </div>
 
                 {/* Headlight */}
                 <div
                   style={{
                     position: "absolute",
-                    left: "4px",
-                    bottom: "18px",
-                    width: "8px",
-                    height: "8px",
+                    left: "3px",
+                    bottom: "20px",
+                    width: "12px",
+                    height: "12px",
                     borderRadius: "50%",
-                    background: "#fdf8f6",
-                    boxShadow: "0 0 12px rgba(255,255,255,0.8), 0 0 30px rgba(255,255,255,0.4)",
+                    background: "#fef08a",
+                    boxShadow: "0 0 20px rgba(253,224,71,1), 0 0 50px rgba(253,224,71,0.6)",
                   }}
                 />
                 
@@ -385,18 +428,18 @@ export const TrainVisualizer = ({
                     key={i}
                     style={{
                       position: "absolute",
-                      top: `${35 + i * 8}%`,
-                      right: "12px",
-                      width: "15%",
-                      height: "1.5px",
-                      background: "#020617",
-                      borderBottom: "1px solid #334155",
+                      top: "20%",
+                      right: `${35 + i * 8}%`,
+                      width: "3%",
+                      height: "20%",
+                      background: "#081326",
+                      borderLeft: "1px solid #1e3a5f",
                     }}
                   />
                 ))}
               </div>
 
-              {/* Loco wheels (sleek bogie) */}
+              {/* Loco wheels (Heavy Bogie) */}
               <div
                 className="absolute flex items-center"
                 style={{
@@ -409,25 +452,26 @@ export const TrainVisualizer = ({
                 <div
                   style={{
                     position: "absolute",
-                    height: "3px",
-                    left: "2px",
-                    right: "2px",
+                    height: "6px",
+                    left: "-4px",
+                    right: "-4px",
                     top: "50%",
                     transform: "translateY(-50%)",
-                    background: "#334155",
-                    borderRadius: "2px",
+                    background: "linear-gradient(to bottom, #475569, #1e293b)",
+                    borderRadius: "3px",
+                    boxShadow: "0 2px 4px rgba(0,0,0,0.8)",
                   }}
                 />
                 {[0, 1, 2].map((i) => (
                   <div
                     key={i}
                     style={{
-                      width: "22px",
-                      height: "22px",
+                      width: "24px",
+                      height: "24px",
                       borderRadius: "50%",
-                      background: "radial-gradient(circle at 30% 30%, #475569 0%, #1e293b 60%, #020617 100%)",
-                      border: "2px solid #334155",
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.9)",
+                      background: "radial-gradient(circle at 35% 35%, #64748b 0%, #334155 50%, #0f172a 100%)",
+                      border: "2px solid #1e293b",
+                      boxShadow: "0 2px 5px rgba(0,0,0,0.8), inset 0 1px 2px rgba(255,255,255,0.15)",
                       position: "relative",
                       zIndex: 1,
                     }}
@@ -437,7 +481,8 @@ export const TrainVisualizer = ({
                         position: "absolute",
                         inset: "5px",
                         borderRadius: "50%",
-                        background: "#0f172a",
+                        background: "radial-gradient(circle at 40% 40%, #94a3b8, #475569)",
+                        boxShadow: "inset 0 1px 2px rgba(0,0,0,0.8)",
                       }}
                     />
                   </div>

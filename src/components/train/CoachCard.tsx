@@ -2,14 +2,12 @@
 
 import { CoachData, TYPE_BADGE } from "./types";
 
-// ─── Minimalist Premium Accents ────────────────────────────────────────────────
+// ─── Real Train Paint Schemes (Classic Luxury Metallic) ─────────────────────────
 
-// We use a universal dark metallic body for all coaches.
-// Only the accent LED stripe and active glows change per class.
-const TYPE_ACCENT = {
-  economy:  { color: "#38bdf8", glow: "rgba(56,189,248,0.6)" },
-  business: { color: "#fbbf24", glow: "rgba(251,191,36,0.6)" },
-  first:    { color: "#a855f7", glow: "rgba(168,85,247,0.6)" },
+const TYPE_PAINT = {
+  economy:  { color: "#38bdf8", trim: "#0284c7", body: ["#1e3a5f", "#0f2540", "#081326"] }, // Deep Steel Blue
+  business: { color: "#f59e0b", trim: "#b45309", body: ["#3f1d1d", "#261010", "#120707"] }, // Rich Burgundy/Crimson
+  first:    { color: "#fbbf24", trim: "#d97706", body: ["#0f2820", "#081612", "#030a08"] }, // Deep Forest Green
 };
 
 // ─── Single wheel ─────────────────────────────────────────────────────────────
@@ -20,9 +18,9 @@ const Wheel = ({ size = 18 }: { size?: number }) => (
       width:  size,
       height: size,
       borderRadius: "50%",
-      background: "radial-gradient(circle at 30% 30%, #475569 0%, #1e293b 60%, #020617 100%)",
-      border: "2px solid #334155",
-      boxShadow: "0 2px 6px rgba(0,0,0,0.9)",
+      background: "radial-gradient(circle at 35% 35%, #64748b 0%, #334155 50%, #0f172a 100%)",
+      border: "2px solid #1e293b",
+      boxShadow: "0 2px 5px rgba(0,0,0,0.8), inset 0 1px 2px rgba(255,255,255,0.15)",
       position: "relative",
       flexShrink: 0,
     }}
@@ -33,23 +31,14 @@ const Wheel = ({ size = 18 }: { size?: number }) => (
         position: "absolute",
         inset: "4px",
         borderRadius: "50%",
-        background: "radial-gradient(circle at 40% 40%, #64748b, #334155)",
+        background: "radial-gradient(circle at 40% 40%, #94a3b8, #475569)",
         boxShadow: "inset 0 1px 2px rgba(0,0,0,0.8)",
-      }}
-    />
-    {/* hub bolt */}
-    <div
-      style={{
-        position: "absolute",
-        inset: "6px",
-        borderRadius: "50%",
-        background: "#0f172a",
       }}
     />
   </div>
 );
 
-// ─── Bogie (axle frame with 2 wheels + frame bar) ─────────────────────────────
+// ─── Bogie ────────────────────────────────────────────────────────────────────
 
 const Bogie = ({ x }: { x: string }) => (
   <div
@@ -63,32 +52,31 @@ const Bogie = ({ x }: { x: string }) => (
       gap: "8px",
     }}
   >
-    {/* bogie frame */}
+    {/* heavy iron bogie frame */}
     <div
       style={{
         position: "absolute",
-        height: "3px",
-        left: "2px",
-        right: "2px",
+        height: "5px",
+        left: "-2px",
+        right: "-2px",
         top: "50%",
         transform: "translateY(-50%)",
-        background: "#334155",
+        background: "linear-gradient(to bottom, #475569, #1e293b)",
         borderRadius: "2px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.8)",
+        boxShadow: "0 2px 4px rgba(0,0,0,0.8)",
       }}
     />
-    {/* bogie center block */}
     <div
       style={{
         position: "absolute",
-        width: "6px",
-        height: "6px",
-        top: "-2px",
+        width: "8px",
+        height: "8px",
+        top: "-3px",
         left: "50%",
         transform: "translateX(-50%)",
-        background: "#1e293b",
+        background: "#334155",
         borderRadius: "1px",
-        border: "1px solid #475569",
+        border: "1px solid #0f172a",
         zIndex: 2,
       }}
     />
@@ -103,29 +91,15 @@ export const Gangway = () => (
   <div
     className="shrink-0 self-end"
     style={{
-      width: "10px",
-      height: "32px",
+      width: "12px",
+      height: "36px",
       marginBottom: "20px",
-      background: "#020617",
-      borderTop: "1px solid #1e293b",
-      borderBottom: "1px solid #1e293b",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "space-evenly",
-      padding: "2px 1px",
-      boxShadow: "inset 0 0 8px rgba(0,0,0,0.8)",
+      background: "repeating-linear-gradient(to bottom, #1e293b 0px, #1e293b 4px, #0f172a 4px, #0f172a 6px)",
+      borderTop: "2px solid #020617",
+      borderBottom: "2px solid #020617",
+      boxShadow: "inset 0 0 6px rgba(0,0,0,0.8)",
     }}
-  >
-    {[0, 1, 2].map((i) => (
-      <div
-        key={i}
-        style={{
-          height: "1px",
-          background: "#1e293b",
-        }}
-      />
-    ))}
-  </div>
+  />
 );
 
 // ─── CoachCard ────────────────────────────────────────────────────────────────
@@ -138,38 +112,42 @@ interface CoachCardProps {
 
 export const CoachCard = ({ coach, active, onClick }: CoachCardProps) => {
   const badge = TYPE_BADGE[coach.type];
-  const accent = TYPE_ACCENT[coach.type];
+  const paint = TYPE_PAINT[coach.type];
   const avail = coach.layout.seats.filter((s) => s.isActive).length;
   const total = coach.layout.seats.length;
   const pct   = Math.round((avail / total) * 100);
   const dotColor = pct > 55 ? "#22c55e" : pct > 25 ? "#f59e0b" : "#ef4444";
 
-  const W = "clamp(8.5rem, 13vw, 11rem)";
-  const H = "clamp(4.2rem, 6.5vw, 5.5rem)";
+  const W = "clamp(9rem, 14vw, 12rem)";
+  const H = "clamp(4.5rem, 6.8vw, 5.8rem)";
 
   return (
     <button
       onClick={onClick}
-      className="relative shrink-0 focus:outline-none group"
-      style={{ width: W, height: H, marginBottom: "22px" }}
+      className="relative shrink-0 focus:outline-none group transition-all duration-300"
+      style={{ 
+        width: W, 
+        height: H, 
+        marginBottom: "22px",
+        transform: active ? "scale(1.03) translateY(-2px)" : "scale(1)",
+        zIndex: active ? 10 : 1,
+      }}
     >
-      {/* ── Main coach body (Sleek Dark Metal) ── */}
+      {/* ── Main body (Rich Metallic Paint) ── */}
       <div
         className="absolute transition-all duration-300"
         style={{
           inset: 0,
-          borderRadius: "4px 4px 2px 2px",
-          // Deep slate metallic gradient
-          background: "linear-gradient(to bottom, #1e293b 0%, #0f172a 40%, #020617 100%)",
-          border: active ? `1px solid ${accent.color}` : `1px solid #334155`,
-          borderTop: active ? `1px solid ${accent.color}` : `1px solid #475569`,
+          borderRadius: "6px 6px 3px 3px",
+          background: `linear-gradient(160deg, ${paint.body[0]} 0%, ${paint.body[1]} 40%, ${paint.body[2]} 100%)`,
+          border: active ? `1.5px solid ${paint.color}` : `1px solid ${paint.trim}`,
           boxShadow: active
-            ? `0 0 15px ${accent.glow}, inset 0 1px 0 rgba(255,255,255,0.1), 0 8px 24px rgba(0,0,0,0.8)`
-            : `0 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05)`,
+            ? `0 0 20px rgba(0,0,0,0.6), 0 0 15px ${paint.color}66, inset 0 2px 4px rgba(255,255,255,0.1)`
+            : `0 4px 12px rgba(0,0,0,0.7), inset 0 1px 2px rgba(255,255,255,0.05)`,
           overflow: "hidden",
         }}
       >
-        {/* ── Top edge highlight ── */}
+        {/* ── Roof curve highlight ── */}
         <div
           style={{
             position: "absolute",
@@ -177,76 +155,115 @@ export const CoachCard = ({ coach, active, onClick }: CoachCardProps) => {
             left: 0,
             right: 0,
             height: "15%",
-            background: "linear-gradient(to bottom, rgba(255,255,255,0.08), transparent)",
+            background: "linear-gradient(to bottom, rgba(255,255,255,0.12), transparent)",
             pointerEvents: "none",
           }}
         />
 
-        {/* ── Minimalist LED Accent Stripe ── */}
+        {/* ── Thick colored horizontal band ── */}
         <div
           style={{
             position: "absolute",
-            bottom: "10px",
+            top: "55%",
             left: 0,
             right: 0,
-            height: "2px",
-            background: active ? accent.color : "#334155",
-            boxShadow: active ? `0 0 8px ${accent.glow}, 0 0 16px ${accent.glow}` : "none",
+            height: "8px",
+            background: active ? paint.color : paint.trim,
+            boxShadow: active ? `0 0 10px ${paint.color}` : "none",
+            borderTop: "1px solid rgba(255,255,255,0.2)",
+            borderBottom: "1px solid rgba(0,0,0,0.3)",
             transition: "all 0.3s ease",
           }}
         />
 
-        {/* ── Windows ── */}
+        {/* ── Coach Name cleanly on the body ── */}
         <div
           style={{
             position: "absolute",
-            top: "8px",
-            left: "8px",
-            right: "8px",
+            top: "65%",
+            left: "50%",
+            transform: "translateX(-50%)",
+            fontSize: "10px",
+            fontWeight: 900,
+            letterSpacing: "0.15em",
+            color: active ? "#ffffff" : "rgba(255,255,255,0.7)",
+            textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+          }}
+        >
+          {coach.label}
+        </div>
+
+        {/* ── Windows (Warm interior glow) ── */}
+        <div
+          style={{
+            position: "absolute",
+            top: "14%",
+            left: "10px",
+            right: "10px",
             display: "flex",
-            gap: "4px",
-            alignItems: "flex-start",
+            gap: "6px",
+            height: "28%",
           }}
         >
           {/* Door panel (left side) */}
           <div
             style={{
-              width: "8px",
+              width: "12px",
               flexShrink: 0,
-              height: "clamp(16px, 2.5vw, 22px)",
-              background: "#0f172a",
-              borderRadius: "1px",
-              border: `1px solid #1e293b`,
+              height: "140%",
+              background: `linear-gradient(to bottom, ${paint.body[1]}, ${paint.body[2]})`,
+              border: `1px solid rgba(0,0,0,0.6)`,
+              borderRadius: "2px",
               display: "flex",
               flexDirection: "column",
-              justifyContent: "center",
               alignItems: "center",
+              justifyContent: "center",
               gap: "2px",
             }}
           >
-            {[0,1].map((i) => (
-              <div key={i} style={{ width: "2px", height: "1px", background: `#334155`, borderRadius: "1px" }} />
-            ))}
+            <div style={{ width: "6px", height: "10px", background: "rgba(0,0,0,0.8)", borderRadius: "1px" }} />
           </div>
 
-          {/* Windows (5 panes) - Dark tinted glass */}
-          {[0, 1, 2, 3, 4].map((i) => (
+          {/* Individual Windows */}
+          {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
               style={{
                 flex: 1,
-                height: "clamp(16px, 2.5vw, 22px)",
-                borderRadius: "2px",
-                // Very dark, almost black tinted windows
-                background: "linear-gradient(145deg, #020617 0%, #000000 100%)",
-                border: "1px solid #0f172a",
-                borderTop: "1px solid #1e293b",
-                boxShadow: "inset 0 2px 4px rgba(0,0,0,0.8)",
+                height: "100%",
+                borderRadius: "3px",
+                // Warm, inviting interior light
+                background: "linear-gradient(135deg, #fef08a 0%, #ca8a04 100%)",
+                border: "1px solid #000000",
+                boxShadow: "inset 0 2px 4px rgba(0,0,0,0.6), 0 0 10px rgba(253,224,71,0.2)",
                 position: "relative",
                 overflow: "hidden",
               }}
             >
-              {/* Subtle glass reflection */}
+              {/* Sillhouette of seats/people inside */}
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "-2px",
+                  left: "10%",
+                  width: "30%",
+                  height: "40%",
+                  background: "rgba(0,0,0,0.4)",
+                  borderRadius: "2px 2px 0 0",
+                }}
+              />
+              <div
+                style={{
+                  position: "absolute",
+                  bottom: "-2px",
+                  right: "10%",
+                  width: "30%",
+                  height: "40%",
+                  background: "rgba(0,0,0,0.3)",
+                  borderRadius: "2px 2px 0 0",
+                }}
+              />
+              {/* Glass glare */}
               <div
                 style={{
                   position: "absolute",
@@ -254,95 +271,55 @@ export const CoachCard = ({ coach, active, onClick }: CoachCardProps) => {
                   left: 0,
                   width: "100%",
                   height: "40%",
-                  background: "linear-gradient(to bottom right, rgba(255,255,255,0.06), transparent)",
+                  background: "linear-gradient(to bottom, rgba(255,255,255,0.4), transparent)",
                 }}
               />
             </div>
           ))}
         </div>
-
-        {/* ── Coach number label ── */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: "2px",
-            left: 0,
-            right: 0,
-            textAlign: "center",
-            fontSize: "7px",
-            fontWeight: 800,
-            letterSpacing: "0.2em",
-            color: active ? accent.color : "#64748b",
-            textShadow: active ? `0 0 6px ${accent.glow}` : "none",
-            transition: "all 0.3s ease",
-          }}
-        >
-          {coach.label}
-        </div>
-
-        {/* ── Subtle rivets ── */}
-        {[
-          { top: "3px",  left:  "3px" },
-          { top: "3px",  right: "3px" },
-          { bottom: "4px", left:  "3px" },
-          { bottom: "4px", right: "3px" },
-        ].map((pos, i) => (
-          <div
-            key={i}
-            style={{
-              position: "absolute",
-              width: "2px",
-              height: "2px",
-              borderRadius: "50%",
-              background: "#334155",
-              ...pos,
-            }}
-          />
-        ))}
       </div>
 
       {/* ── Dual bogies undercarriage ── */}
-      <Bogie x="25%" />
-      <Bogie x="75%" />
+      <Bogie x="22%" />
+      <Bogie x="78%" />
 
-      {/* ── Type badge (subtle dark mode) ── */}
+      {/* ── Type badge ── */}
       <div
-        className="absolute left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-sm text-[7px] font-bold text-slate-300 whitespace-nowrap transition-all duration-300 uppercase tracking-widest"
+        className="absolute left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[7px] font-black text-white whitespace-nowrap transition-all duration-300 uppercase tracking-widest shadow-md"
         style={{
           bottom: "calc(100% + 14px)",
-          background: "#0f172a",
-          border: `1px solid ${active ? accent.color : "#334155"}`,
-          opacity: active ? 1 : 0.6,
-          boxShadow: active ? `0 0 10px ${accent.glow}, 0 2px 4px rgba(0,0,0,0.5)` : "0 2px 4px rgba(0,0,0,0.5)",
+          background: paint.trim,
+          border: `1px solid ${paint.color}`,
+          opacity: active ? 1 : 0.8,
+          boxShadow: active ? `0 0 15px ${paint.color}88, 0 2px 4px rgba(0,0,0,0.5)` : "0 2px 4px rgba(0,0,0,0.5)",
         }}
       >
         {badge.label}
       </div>
 
-      {/* ── Availability chip (minimalist) ── */}
+      {/* ── Availability chip ── */}
       {active && (
         <div
           className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 whitespace-nowrap"
           style={{
-            bottom: "calc(100% + 32px)",
-            background: "rgba(2,6,23,0.8)",
-            border: `1px solid #1e293b`,
+            bottom: "calc(100% + 36px)",
+            background: "rgba(0,0,0,0.85)",
+            border: `1px solid ${paint.color}`,
             borderRadius: "12px",
-            padding: "2px 8px",
-            fontSize: "7px",
-            fontWeight: 600,
-            color: "#cbd5e1",
-            boxShadow: `0 4px 12px rgba(0,0,0,0.5)`,
-            backdropFilter: "blur(2px)",
+            padding: "3px 10px",
+            fontSize: "7.5px",
+            fontWeight: 800,
+            color: "#ffffff",
+            boxShadow: `0 4px 12px rgba(0,0,0,0.5), 0 0 15px ${paint.color}44`,
           }}
         >
           <div
             style={{
-              width: "5px",
-              height: "5px",
+              width: "6px",
+              height: "6px",
               borderRadius: "50%",
               background: dotColor,
-              boxShadow: `0 0 5px ${dotColor}`,
+              boxShadow: `0 0 6px ${dotColor}`,
             }}
           />
           {avail}/{total} free
@@ -362,42 +339,43 @@ interface CoachItemProps {
 }
 
 export const CoachItem = ({ coach, isActive, isLast, onSelect }: CoachItemProps) => {
-  const accent = TYPE_ACCENT[coach.type];
+  const paint = TYPE_PAINT[coach.type];
 
   return (
     <div className="flex items-end">
       <div className="relative flex flex-col items-center">
-        {/* VIEWING beacon (minimal) */}
+        {/* VIEWING beacon */}
         {isActive && (
           <div
             className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center z-20 pointer-events-none"
-            style={{ bottom: "calc(100% + 3.2rem)" }}
+            style={{ bottom: "calc(100% + 3.5rem)" }}
           >
             <div
               style={{
-                color: accent.color,
+                color: "#ffffff",
+                background: paint.color,
                 fontSize: "7px",
-                fontWeight: 800,
+                fontWeight: 900,
                 letterSpacing: "0.2em",
-                padding: "2px 8px",
+                padding: "3px 10px",
+                borderRadius: "12px",
                 whiteSpace: "nowrap",
                 display: "flex",
                 alignItems: "center",
                 gap: "4px",
-                textShadow: `0 0 8px ${accent.glow}`,
+                boxShadow: `0 4px 8px rgba(0,0,0,0.4), 0 0 15px ${paint.color}99`,
                 animation: "pulse 2s ease-in-out infinite",
               }}
             >
-              <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: accent.color, boxShadow: `0 0 6px ${accent.glow}` }} />
+              <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#fff", boxShadow: "0 0 4px #fff" }} />
               VIEWING
             </div>
-            {/* Minimal connector line */}
+            {/* Connector line */}
             <div
               style={{
-                width: "1px",
-                height: "24px",
-                background: `linear-gradient(to bottom, ${accent.color}, transparent)`,
-                opacity: 0.5,
+                width: "2px",
+                height: "26px",
+                background: `linear-gradient(to bottom, ${paint.color}, transparent)`,
                 marginTop: "2px",
               }}
             />
