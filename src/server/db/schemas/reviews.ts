@@ -39,6 +39,7 @@ export const reviews = pgTable(
   },
   (table) => [
     index("reviews_movie_idx").on(table.movieId),
+    index("reviews_booking_idx").on(table.bookingId),
     index("reviews_rating_idx").on(table.rating),
     uniqueIndex("reviews_user_movie_unique_idx").on(
       table.userId,
@@ -83,6 +84,7 @@ export const wishlist = pgTable(
   (table) => [
     index("waitlist_show_idx").on(table.showId),
     index("waitlist_user_idx").on(table.userId),
+    index("waitlist_seat_pref_idx").on(table.seatPreference),
     index("waitlist_status_idx").on(table.status),
   ],
 );

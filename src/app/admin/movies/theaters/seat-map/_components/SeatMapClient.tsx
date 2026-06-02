@@ -13,6 +13,8 @@ import {
   SeatType,
   TYPE_ICONS,
   LayoutMode,
+  CurveMode,
+  GenerationOptions,
 } from "./utils";
 import React, { useCallback, useEffect, useState } from "react";
 import { Plus, Minus } from "lucide-react";
@@ -44,6 +46,10 @@ const SeatMapClient = ({ screenId }: SeatMapClientProps) => {
   const [rows, setRows] = useState(10);
   const [cols, setCols] = useState(15);
   const [layoutMode, setLayoutMode] = useState<LayoutMode>("standard");
+  const [layoutCurve, setLayoutCurve] = useState<CurveMode>("none");
+  const [isTrapezoid, setIsTrapezoid] = useState(false);
+  const [customAisles, setCustomAisles] = useState("");
+  const [customWalkways, setCustomWalkways] = useState("");
   const [isGenerated, setIsGenerated] = useState(false);
 
   const [activeTool, setActiveTool] = useState<string | null>(null);
@@ -65,10 +71,9 @@ const SeatMapClient = ({ screenId }: SeatMapClientProps) => {
   useEffect(() => {
     console.log("running");
     async function fetch() {
-      const [seatTypesdata, screendata] = await Promise.all([
-        getSeatTypes(),
-        getScreen(screenId),
-      ]);
+      const screendata = await getScreen(screenId);
+      const seatTypesdata = await getSeatTypes(screendata.theatreId);
+      
       setSeatTypes(seatTypesdata);
       setScreen(screendata);
       setLoadingScreen(false);
@@ -121,12 +126,28 @@ const SeatMapClient = ({ screenId }: SeatMapClientProps) => {
   // ── Generate grid ──────────────────────────────────────────────────────────
   const generateGrid = useCallback(() => {
     const defaultTypeId = seatTypes[0]?.id ?? null;
-    setGrid(renumberGrid(buildGrid(rows, cols, defaultTypeId, layoutMode)));
+    const options: GenerationOptions = {
+      layoutMode,
+      curveMode: layoutCurve,
+      isTrapezoid,
+      customAisles,
+      customWalkways,
+    };
+    setGrid(renumberGrid(buildGrid(rows, cols, defaultTypeId, options)));
     setIsGenerated(true);
     toast.success(
       `Generated ${rows} × ${cols} seat grid (${rows * cols} seats)`,
     );
-  }, [rows, cols, seatTypes, layoutMode]);
+  }, [
+    rows,
+    cols,
+    seatTypes,
+    layoutMode,
+    layoutCurve,
+    isTrapezoid,
+    customAisles,
+    customWalkways,
+  ]);
 
   // ── Paint ──────────────────────────────────────────────────────────────────
   const paintCell = useCallback(
@@ -314,6 +335,14 @@ const SeatMapClient = ({ screenId }: SeatMapClientProps) => {
           setCols={setCols}
           layoutMode={layoutMode}
           setLayoutMode={setLayoutMode}
+          layoutCurve={layoutCurve}
+          setLayoutCurve={setLayoutCurve}
+          isTrapezoid={isTrapezoid}
+          setIsTrapezoid={setIsTrapezoid}
+          customAisles={customAisles}
+          setCustomAisles={setCustomAisles}
+          customWalkways={customWalkways}
+          setCustomWalkways={setCustomWalkways}
           screen={screen}
           isGenerated={isGenerated}
           generateGrid={generateGrid}

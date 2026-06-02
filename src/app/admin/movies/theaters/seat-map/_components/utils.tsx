@@ -14,7 +14,16 @@ export interface SeatType {
   priceMultiplier: string;
 }
 
-export type LayoutMode = "standard" | "center_aisle" | "double_aisle";
+export type LayoutMode = "standard" | "center_aisle" | "double_aisle" | "custom";
+export type CurveMode = "none" | "slight" | "steep";
+
+export interface GenerationOptions {
+  layoutMode: LayoutMode;
+  curveMode: CurveMode;
+  isTrapezoid: boolean;
+  customAisles: string;
+  customWalkways: string;
+}
 
 export interface ScreenInfo {
   id: string;
@@ -35,6 +44,7 @@ export interface SeatCell {
   seatTypeId: string | null;
   label: string;
   isAccessible: boolean;
+  offsetY?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -78,28 +88,63 @@ export function buildGrid(
   rows: number,
   cols: number,
   defaultTypeId: string | null,
-  layoutMode: LayoutMode = "standard"
+  options: GenerationOptions
 ): SeatCell[][] {
+  const customAisleSet = new Set(
+    options.customAisles.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
+  );
+  const customWalkwaySet = new Set(
+    options.customWalkways.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
+  );
+
   return Array.from({ length: rows }, (_, ri) =>
     Array.from({ length: cols }, (_, ci) => {
       let isAisle = false;
-      if (layoutMode === "center_aisle") {
-        // 2 aisle columns in the center
+      let isWalkway = false;
+      
+      // 1. Walkways (Horizontal)
+      if (customWalkwaySet.has(ri + 1)) isWalkway = true;
+
+      // 2. Aisles (Vertical)
+      if (options.layoutMode === "center_aisle") {
         const mid = Math.floor(cols / 2);
         if (ci === mid || ci === mid - 1) isAisle = true;
-      } else if (layoutMode === "double_aisle") {
-        // aisles at 1/3 and 2/3 marks (2 cols each)
+      } else if (options.layoutMode === "double_aisle") {
         const third = Math.floor(cols / 3);
         const twoThird = Math.floor((cols * 2) / 3);
         if (ci === third || ci === third - 1 || ci === twoThird || ci === twoThird - 1) isAisle = true;
+      } else if (options.layoutMode === "custom") {
+        if (customAisleSet.has(ci + 1)) isAisle = true;
       }
+
+      // 3. Trapezoid Pruning (Cinematic Wedge)
+      if (options.isTrapezoid) {
+        // The closer to the screen (ri=0), the more seats we prune from edges.
+        const trapezoidRatio = (rows - ri) / rows; // 1 at front, 0 at back
+        // Prune up to 20% of cols from each side at the very front
+        const pruneCols = Math.floor(cols * 0.2 * trapezoidRatio);
+        if (ci < pruneCols || ci >= cols - pruneCols) isAisle = true;
+      }
+
+      // 4. Curve Offset (Stadium)
+      let offsetY = 0;
+      if (options.curveMode !== "none") {
+        const center = (cols - 1) / 2;
+        const distFromCenter = Math.abs(ci - center);
+        const curveFactor = options.curveMode === "steep" ? 1.5 : 0.5;
+        // Parabola: y = a * x^2
+        offsetY = Math.pow(distFromCenter, 2) * curveFactor;
+      }
+
+      const isEmpty = isAisle || isWalkway;
 
       return {
         row: rowLabel(ri),
         col: ci + 1,
-        seatTypeId: isAisle ? null : defaultTypeId,
-        label: isAisle ? "" : String(ci + 1),
+        seatTypeId: isEmpty ? null : defaultTypeId,
+        label: isEmpty ? "" : String(ci + 1),
         isAccessible: false,
+        offsetY,
       };
     })
   );

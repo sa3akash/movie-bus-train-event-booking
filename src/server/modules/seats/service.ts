@@ -14,9 +14,12 @@ export abstract class SeatService {
 				bookingId: showSeats.bookingId,
 				status: showSeats.status,
 				row: seats.row,
-				number: seats.number,
+				seatNumber: seats.seatNumber,
 				seatTypeName: seatType.name,
-				priceMultiplier: seats.priceMultiplier,
+				priceMultiplier: seatType.priceMultiplier,
+				price: seatType.price,
+				color: seatType.color,
+				currency: seatType.currency,
 			})
 			.from(showSeats)
 			.innerJoin(seats, eq(showSeats.seatId, seats.id))
@@ -26,16 +29,29 @@ export abstract class SeatService {
 		return results.map(r => ({
 			...r,
 			seatTypeName: r.seatTypeName ?? 'STANDARD',
+			priceMultiplier: r.priceMultiplier ?? '1.00',
+			price: r.price ?? 0,
+			color: r.color ?? '#FFD700',
+			currency: r.currency ?? 'BDT',
 		}))
 	}
 
-	static async listSeatTypes() {
-		const types = await db.select().from(seatType)
+	static async listSeatTypes(theaterId?: string) {
+		const query = db.select().from(seatType)
+		if (theaterId) {
+			query.where(eq(seatType.theaterId, theaterId))
+		}
+		
+		const types = await query
 		return types.map(t => ({
 			id: t.id,
 			name: t.name,
 			capacity: t.capacity,
 			priceMultiplier: t.priceMultiplier || '1.00',
+			price: t.price,
+			color: t.color || '#FFD700',
+			currency: t.currency || 'BDT',
+			theaterId: t.theaterId,
 		}))
 	}
 
@@ -43,9 +59,13 @@ export abstract class SeatService {
 		const [newType] = await db
 			.insert(seatType)
 			.values({
+				theaterId: data.theaterId,
 				name: data.name,
 				capacity: data.capacity ?? 1,
 				priceMultiplier: data.priceMultiplier ?? '1.00',
+				price: data.price ?? 0,
+				color: data.color ?? '#FFD700',
+				currency: data.currency ?? 'BDT',
 			})
 			.returning()
 
@@ -54,6 +74,10 @@ export abstract class SeatService {
 			name: newType.name,
 			capacity: newType.capacity,
 			priceMultiplier: newType.priceMultiplier || '1.00',
+			price: newType.price,
+			color: newType.color || '#FFD700',
+			currency: newType.currency || 'BDT',
+			theaterId: newType.theaterId,
 		}
 	}
 
@@ -67,6 +91,9 @@ export abstract class SeatService {
 				name: data.name ?? undefined,
 				capacity: data.capacity ?? undefined,
 				priceMultiplier: data.priceMultiplier ?? undefined,
+				price: data.price ?? undefined,
+				color: data.color ?? undefined,
+				currency: data.currency ?? undefined,
 			})
 			.where(eq(seatType.id, id))
 			.returning()
@@ -76,6 +103,10 @@ export abstract class SeatService {
 			name: updated.name,
 			capacity: updated.capacity,
 			priceMultiplier: updated.priceMultiplier || '1.00',
+			price: updated.price,
+			color: updated.color || '#FFD700',
+			currency: updated.currency || 'BDT',
+			theaterId: updated.theaterId,
 		}
 	}
 
@@ -95,11 +126,12 @@ export abstract class SeatService {
 				data.map((s) => ({
 					screenId: s.screenId,
 					row: s.row,
-					number: s.number,
+					seatNumber: s.seatNumber,
 					seatTypeId: s.seatTypeId ?? null,
-					gridRow: s.gridRow,
-					gridColumn: s.gridColumn,
-					priceMultiplier: s.priceMultiplier ?? '1.00',
+					posX: s.posX,
+					posY: s.posY,
+					rotation: s.rotation ?? '0',
+					isAccessible: s.isAccessible ?? false,
 				}))
 			)
 			.returning()
@@ -108,11 +140,12 @@ export abstract class SeatService {
 			id: ns.id,
 			screenId: ns.screenId,
 			row: ns.row,
-			number: ns.number,
+			seatNumber: ns.seatNumber,
 			seatTypeId: ns.seatTypeId,
-			gridRow: ns.gridRow,
-			gridColumn: ns.gridColumn,
-			priceMultiplier: ns.priceMultiplier || '1.00',
+			posX: ns.posX,
+			posY: ns.posY,
+			rotation: ns.rotation,
+			isAccessible: ns.isAccessible,
 		}))
 	}
 }

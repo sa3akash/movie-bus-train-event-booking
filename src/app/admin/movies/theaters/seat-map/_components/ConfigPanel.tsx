@@ -3,7 +3,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, RefreshCw, Settings2 } from "lucide-react";
-import { ScreenInfo, LayoutMode } from "./utils";
+import { ScreenInfo, LayoutMode, CurveMode } from "./utils";
 
 interface ConfigPanelProps {
   showConfig: boolean;
@@ -14,6 +14,14 @@ interface ConfigPanelProps {
   setCols: (cols: number) => void;
   layoutMode: LayoutMode;
   setLayoutMode: (mode: LayoutMode) => void;
+  layoutCurve: CurveMode;
+  setLayoutCurve: (mode: CurveMode) => void;
+  isTrapezoid: boolean;
+  setIsTrapezoid: (t: boolean) => void;
+  customAisles: string;
+  setCustomAisles: (s: string) => void;
+  customWalkways: string;
+  setCustomWalkways: (s: string) => void;
   screen: ScreenInfo;
   isGenerated: boolean;
   generateGrid: () => void;
@@ -28,6 +36,14 @@ export function ConfigPanel({
   setCols,
   layoutMode,
   setLayoutMode,
+  layoutCurve,
+  setLayoutCurve,
+  isTrapezoid,
+  setIsTrapezoid,
+  customAisles,
+  setCustomAisles,
+  customWalkways,
+  setCustomWalkways,
   screen,
   isGenerated,
   generateGrid,
@@ -105,8 +121,71 @@ export function ConfigPanel({
               <option value="standard">Standard Block</option>
               <option value="center_aisle">Center Aisle</option>
               <option value="double_aisle">Double Aisles</option>
+              <option value="custom">Custom Aisles</option>
             </select>
           </div>
+
+          {layoutMode === "custom" && (
+            <div className="space-y-1.5 p-2 bg-slate-900 rounded-md border border-slate-800">
+              <Label className="text-[10px] text-slate-400 uppercase tracking-wider">
+                Vertical Aisles (Cols)
+              </Label>
+              <Input
+                placeholder="e.g. 5, 10, 15"
+                value={customAisles}
+                onChange={(e) => setCustomAisles(e.target.value)}
+                className="h-7 text-xs bg-slate-950 border-slate-700"
+              />
+            </div>
+          )}
+
+          <div className="space-y-1.5 p-2 bg-slate-900 rounded-md border border-slate-800">
+            <Label className="text-[10px] text-slate-400 uppercase tracking-wider">
+              Walkways (Empty Rows)
+            </Label>
+            <Input
+              placeholder="e.g. 4, 8"
+              value={customWalkways}
+              onChange={(e) => setCustomWalkways(e.target.value)}
+              className="h-7 text-xs bg-slate-950 border-slate-700"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-[11px] text-slate-400 uppercase tracking-wider">
+                Curve Style
+              </Label>
+              <select
+                value={layoutCurve}
+                onChange={(e) => setLayoutCurve(e.target.value as CurveMode)}
+                className="w-full h-8 px-2 text-xs text-white bg-slate-950 border border-slate-800 rounded-md focus:border-indigo-500"
+              >
+                <option value="none">None</option>
+                <option value="slight">Slight Curve</option>
+                <option value="steep">Steep Curve</option>
+              </select>
+            </div>
+            
+            <div className="space-y-1.5 flex flex-col justify-end pb-1">
+              <label className="flex items-center gap-2 cursor-pointer group">
+                <div className="relative flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={isTrapezoid}
+                    onChange={(e) => setIsTrapezoid(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div className={`w-8 h-4 rounded-full transition-colors ${isTrapezoid ? 'bg-indigo-500' : 'bg-slate-700'}`}></div>
+                  <div className={`absolute left-0.5 top-0.5 w-3 h-3 bg-white rounded-full transition-transform ${isTrapezoid ? 'translate-x-4' : 'translate-x-0'}`}></div>
+                </div>
+                <span className="text-[11px] text-slate-400 uppercase tracking-wider group-hover:text-slate-300">
+                  Trapezoid
+                </span>
+              </label>
+            </div>
+          </div>
+
           <div className="p-2.5 rounded-lg bg-slate-800/60 border border-slate-700/50 text-[11px] text-slate-400 space-y-1">
             <div className="flex justify-between">
               <span>Estimated seats</span>

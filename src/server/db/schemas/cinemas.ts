@@ -3,7 +3,7 @@ import { defaultColumns } from "./defaultKey";
 import { screenTypeEnum } from "./enum";
 import { relations } from "drizzle-orm";
 import { shows } from "./movie";
-import { seats } from "./seats";
+import { seats, seatType } from "./seats";
 
 export const cineplexChain = pgTable("cineplex_chain", {
   ...defaultColumns,
@@ -66,7 +66,9 @@ export const theaterImages = pgTable("theater_images", {
   height: integer("height").notNull(),
   blurDataURL: varchar("blur_data_url", { length: 500 }),
   blurHash: varchar("blur_hash", { length: 255 }),
-});
+}, (table) => [
+  index("idx_theater_images_theater_id").on(table.theaterId),
+]);
 
 export const cinemaScreens = pgTable("cinema_screens", {
   ...defaultColumns,
@@ -102,7 +104,8 @@ export const theatersRelations = relations(theatersTable, ({ many, one }) => ({
     fields: [theatersTable.cineplexChainId],
     references: [cineplexChain.id],
   }),
-  images: many(theaterImages)
+  images: many(theaterImages),
+  seatTypes: many(seatType)
 }));
 
 export const theaterImagesRelations = relations(theaterImages, ({ one }) => ({

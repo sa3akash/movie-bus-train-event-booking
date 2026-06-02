@@ -6,10 +6,15 @@ import { isAdmin } from '@/server/middlewares/auth'
 export const seats = new Elysia({ prefix: '/seats' })
 	.get(
 		'/types',
-		async () => {
-			return await SeatService.listSeatTypes()
+		async ({ query }) => {
+			return await SeatService.listSeatTypes(query?.theaterId)
 		},
 		{
+			query: t.Optional(
+				t.Object({
+					theaterId: t.Optional(t.String()),
+				})
+			),
 			response: {
 				200: t.Array(SeatModel.seatTypeResponse),
 			},

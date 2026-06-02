@@ -1,8 +1,9 @@
 import { SeatCell } from "./utils";
 
 
-export async function getSeatTypes() {
-  return fetch("/api/seats/types").then((r) => r.json())
+export async function getSeatTypes(theaterId?: string) {
+  const url = theaterId ? `/api/seats/types?theaterId=${theaterId}` : "/api/seats/types";
+  return fetch(url).then((r) => r.json())
 }
 
 

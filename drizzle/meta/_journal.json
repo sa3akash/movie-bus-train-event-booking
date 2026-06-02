@@ -15,6 +15,13 @@
       "when": 1779379167081,
       "tag": "0001_quiet_roughhouse",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780389252065,
+      "tag": "0002_common_mongoose",
+      "breakpoints": true
     }
   ]
 }

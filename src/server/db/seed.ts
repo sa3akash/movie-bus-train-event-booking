@@ -1,12 +1,27 @@
 import "dotenv/config";
 import { db } from "./index";
-import { roles, usersTable, userRoles, cineplexChain, theatersTable, cinemaScreens } from "./schemas";
-import { eq, and } from "drizzle-orm";
+import { roles, usersTable, userRoles, cineplexChain, theatersTable, cinemaScreens, seatType, seats } from "./schemas";
+import { eq, and, sql } from "drizzle-orm";
 import { hashPassword } from "../utils/hash";
+import fs from "fs";
+import path from "path";
 
 async function main() {
   console.log("Seeding started...");
   
+  console.log("Dropping all existing data (TRUNCATE)...");
+  const tables = await db.execute(sql`
+    SELECT tablename
+    FROM pg_tables
+    WHERE schemaname = 'public'
+  `);
+  
+  for (const row of tables.rows) {
+    if (row.tablename === "drizzle_migrations") continue;
+    await db.execute(sql.raw(`TRUNCATE TABLE "${row.tablename}" CASCADE;`));
+  }
+  console.log("Database cleared successfully.");
+
   // Seed Roles
   console.log("Seeding roles...");
   const roleNames = ["admin", "staff", "customer"];
@@ -205,6 +220,37 @@ async function main() {
     dbTheaters[t.slug] = existingTheater.id;
   }
 
+  // Seed Seat Types
+  console.log("Seeding seat types...");
+  const seatTypeNames = [
+    { name: "Standard", capacity: 1, price: 300, color: "#94a3b8" },
+    { name: "Premium", capacity: 1, price: 500, color: "#818cf8" },
+    { name: "VIP", capacity: 1, price: 800, color: "#fcd34d" },
+    { name: "Couple", capacity: 2, price: 1200, color: "#f43f5e" },
+  ];
+
+  for (const theaterId of Object.values(dbTheaters)) {
+    for (const st of seatTypeNames) {
+      const [existingST] = await db
+        .select()
+        .from(seatType)
+        .where(and(eq(seatType.theaterId, theaterId), eq(seatType.name, st.name)))
+        .limit(1);
+      
+      if (!existingST) {
+        await db.insert(seatType).values({
+          theaterId,
+          name: st.name,
+          capacity: st.capacity,
+          price: st.price,
+          color: st.color,
+          currency: "BDT",
+          priceMultiplier: "1.00",
+        });
+      }
+    }
+  }
+
   // Seed Screens
   console.log("Seeding screens...");
   const screensData = [
@@ -230,7 +276,7 @@ async function main() {
     const theaterId = dbTheaters[s.theaterSlug];
     if (!theaterId) continue;
 
-    let [existingScreen] = await db
+    const [existingScreen] = await db
       .select()
       .from(cinemaScreens)
       .where(and(eq(cinemaScreens.theatreId, theaterId), eq(cinemaScreens.name, s.name)))
@@ -245,6 +291,46 @@ async function main() {
         isActive: true,
       });
     }
+  }
+
+  // Seed Seats from data.json
+  console.log("Seeding seats from data.json...");
+  try {
+    const dataPath = path.join(process.cwd(), "data.json");
+    if (fs.existsSync(dataPath)) {
+      const seatData = JSON.parse(fs.readFileSync(dataPath, "utf-8"));
+      
+      const targetTheaterId = dbTheaters["star-cineplex-bashundhara-city"];
+      const [targetScreen] = await db.select().from(cinemaScreens).where(eq(cinemaScreens.theatreId, targetTheaterId)).limit(1);
+      const [standardSeatType] = await db.select().from(seatType).where(and(eq(seatType.theaterId, targetTheaterId), eq(seatType.name, "Standard"))).limit(1);
+
+      if (targetScreen && standardSeatType) {
+        await db.update(cinemaScreens).set({
+          seatLayout: seatData,
+        }).where(eq(cinemaScreens.id, targetScreen.id));
+
+        const seatsToInsert = seatData.seats.map((s: any) => ({
+          screenId: targetScreen.id,
+          row: s.row,
+          seatNumber: s.seatNumber,
+          seatTypeId: standardSeatType.id,
+          posX: s.x.toString(),
+          posY: s.y.toString(),
+          isAccessible: false,
+          isActive: true,
+        }));
+        
+        if (seatsToInsert.length > 0) {
+          await db.delete(seats).where(eq(seats.screenId, targetScreen.id));
+          await db.insert(seats).values(seatsToInsert);
+          console.log(`Successfully seeded ${seatsToInsert.length} seats for ${targetScreen.name}`);
+        }
+      }
+    } else {
+      console.log("data.json not found, skipping seats seeding.");
+    }
+  } catch (err) {
+    console.error("Failed to seed seats from data.json:", err);
   }
 
   console.log("Seeding completed successfully!");

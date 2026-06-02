@@ -101,6 +101,9 @@ const MemoizedSeatCell = memo(function MemoizedSeatCell({
           ${activeTool ? "cursor-crosshair" : "cursor-default"}
           ${!isEmpty ? "hover:brightness-125 hover:scale-110" : ""}
         `}
+      style={{
+        transform: cell.offsetY ? `translateY(${cell.offsetY}px)` : undefined,
+      }}
       onMouseDown={(e) => onMouseDown(ri, ci, e)}
       onMouseEnter={() => onMouseEnter(ri, ci)}
       onMouseUp={(e) => onMouseUp(ri, ci, e)}
