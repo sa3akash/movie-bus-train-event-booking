@@ -1,6 +1,6 @@
 import { db } from '@/server/db'
-import { movies, shows, cinemaScreens, seats, showSeats } from '@/server/db/schemas'
-import { eq, and, ilike, or } from 'drizzle-orm'
+import { movies, shows, cinemaScreens, seats, showSeats, theatersTable } from '@/server/db/schemas'
+import { eq, and, ilike, or, desc, sql } from 'drizzle-orm'
 import { status } from 'elysia'
 import type { MovieModel } from './model'
 
@@ -167,5 +167,111 @@ export abstract class MovieService {
 		}
 
 		return newShow
+	}
+
+	static async getAdminShows(params: { search?: string; page?: number; limit?: number }) {
+		const page = Number(params.page) || 1;
+		const limit = Number(params.limit) || 10;
+		const offset = (page - 1) * limit;
+
+		const query = db
+			.select({
+				id: shows.id,
+				movieId: shows.movieId,
+				movieTitle: movies.title,
+				screenId: shows.screenId,
+				screenName: cinemaScreens.name,
+				theaterName: theatersTable.name,
+				startTime: shows.startTime,
+				endTime: shows.endTime,
+				basePrice: shows.basePrice,
+				status: shows.status,
+				availableSeats: shows.availableSeats,
+			})
+			.from(shows)
+			.innerJoin(movies, eq(shows.movieId, movies.id))
+			.innerJoin(cinemaScreens, eq(shows.screenId, cinemaScreens.id))
+			.innerJoin(theatersTable, eq(cinemaScreens.theatreId, theatersTable.id));
+
+		const conditions = [];
+		if (params.search) {
+			conditions.push(ilike(movies.title, `%${params.search}%`));
+		}
+
+		if (conditions.length > 0) {
+			query.where(and(...conditions));
+		}
+
+		const results = await query.limit(limit).offset(offset).orderBy(desc(shows.startTime));
+		
+		const totalQuery = db.select({ count: sql`count(*)`.mapWith(Number) }).from(shows);
+		if (conditions.length > 0) {
+			totalQuery.innerJoin(movies, eq(shows.movieId, movies.id)).where(and(...conditions));
+		}
+		
+		const [{ count }] = await totalQuery;
+
+		return {
+			items: results,
+			total: count,
+			page,
+			limit,
+			pages: Math.ceil(count / limit),
+		};
+	}
+
+	static async getShowById(id: string) {
+		const [show] = await db
+			.select({
+				id: shows.id,
+				movieId: shows.movieId,
+				screenId: shows.screenId,
+				startTime: shows.startTime,
+				endTime: shows.endTime,
+				basePrice: shows.basePrice,
+				status: shows.status,
+				availableSeats: shows.availableSeats,
+			})
+			.from(shows)
+			.where(eq(shows.id, id))
+			.limit(1);
+
+		if (!show) {
+			throw status(404, { message: 'Show not found' });
+		}
+		return show;
+	}
+
+	static async updateShow(id: string, data: MovieModel['updateShowBody']) {
+		const [existing] = await db.select().from(shows).where(eq(shows.id, id)).limit(1);
+		if (!existing) {
+			throw status(404, { message: 'Show not found' });
+		}
+
+		const updateData: any = {};
+		if (data.startTime) updateData.startTime = new Date(data.startTime);
+		if (data.endTime) updateData.endTime = new Date(data.endTime);
+		if (data.basePrice !== undefined) updateData.basePrice = data.basePrice;
+		if (data.status) updateData.status = data.status;
+		if (data.availableSeats !== undefined) updateData.availableSeats = data.availableSeats;
+
+		if (Object.keys(updateData).length > 0) {
+			await db.update(shows).set(updateData).where(eq(shows.id, id));
+		}
+
+		return { success: true, message: 'Show updated successfully' };
+	}
+
+	static async deleteShow(id: string) {
+		const [existing] = await db.select().from(shows).where(eq(shows.id, id)).limit(1);
+		if (!existing) {
+			throw status(404, { message: 'Show not found' });
+		}
+
+		// Also delete associated show_seats (cascade takes care of it if configured, but let's be explicit or rely on cascade)
+		await db.delete(showSeats).where(eq(showSeats.showId, id));
+		await db.delete(shows).where(eq(shows.id, id));
+
+		return { success: true, message: 'Show deleted successfully' };
 	}
 }

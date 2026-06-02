@@ -101,3 +101,89 @@ export const movie = new Elysia({ prefix: '/movie' })
 			}
 		}
 	)
+	.get(
+		'/admin-shows',
+		async ({ query }) => {
+			return await MovieService.getAdminShows({
+				search: query.search,
+				page: query.page,
+				limit: query.limit,
+			})
+		},
+		{
+			query: t.Object({
+				search: t.Optional(t.String()),
+				page: t.Optional(t.Number()),
+				limit: t.Optional(t.Number()),
+			}),
+			response: {
+				200: MovieModel.adminShowsResponse,
+			},
+			detail: {
+				tags: ['Movie', 'Admin'],
+				summary: 'Get all shows (paginated)',
+				description: 'Get all shows with pagination and search'
+			}
+		}
+	)
+	.get(
+		'/shows/:id',
+		async ({ params: { id } }) => {
+			return await MovieService.getShowById(id)
+		},
+		{
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: {
+				200: MovieModel.showResponse,
+				404: MovieModel.errorResponse,
+			},
+			detail: {
+				tags: ['Movie', 'Admin'],
+				summary: 'Get show by id',
+				description: 'Get show by id'
+			}
+		}
+	)
+	.put(
+		'/shows/:id',
+		async ({ params: { id }, body }) => {
+			return await MovieService.updateShow(id, body)
+		},
+		{
+			params: t.Object({
+				id: t.String(),
+			}),
+			body: MovieModel.updateShowBody,
+			response: {
+				200: MovieModel.successResponse,
+				404: MovieModel.errorResponse,
+			},
+			detail: {
+				tags: ['Movie', 'Admin'],
+				summary: 'Update a show',
+				description: 'Update a show'
+			}
+		}
+	)
+	.delete(
+		'/shows/:id',
+		async ({ params: { id } }) => {
+			return await MovieService.deleteShow(id)
+		},
+		{
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: {
+				200: MovieModel.successResponse,
+				404: MovieModel.errorResponse,
+			},
+			detail: {
+				tags: ['Movie', 'Admin'],
+				summary: 'Delete a show',
+				description: 'Delete a show'
+			}
+		}
+	)

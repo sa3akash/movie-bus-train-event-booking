@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { db } from "./index";
-import { roles, usersTable, userRoles, cineplexChain, theatersTable, cinemaScreens, seatType, seats } from "./schemas";
+import { roles, usersTable, userRoles, cineplexChain, theatersTable, cinemaScreens, seatType, seats, movies, shows, showSeats, busBrands, busTypes, busesTable, busesSeat, locationsTable, routesTable, busTrips } from "./schemas";
 import { eq, and, sql } from "drizzle-orm";
 import { hashPassword } from "../utils/hash";
 import fs from "fs";
@@ -16,9 +16,13 @@ async function main() {
     WHERE schemaname = 'public'
   `);
   
-  for (const row of tables.rows) {
-    if (row.tablename === "drizzle_migrations") continue;
-    await db.execute(sql.raw(`TRUNCATE TABLE "${row.tablename}" CASCADE;`));
+  const tableNames = tables.rows
+    .map(row => row.tablename)
+    .filter(name => name !== "drizzle_migrations");
+
+  if (tableNames.length > 0) {
+    const truncateQuery = `TRUNCATE TABLE ${tableNames.map(name => `"${name}"`).join(", ")} CASCADE;`;
+    await db.execute(sql.raw(truncateQuery));
   }
   console.log("Database cleared successfully.");
 
@@ -331,6 +335,167 @@ async function main() {
     }
   } catch (err) {
     console.error("Failed to seed seats from data.json:", err);
+  }
+
+  // Seed Movie
+  console.log("Seeding movies...");
+  let [movie] = await db.select().from(movies).where(eq(movies.slug, "dune-part-two")).limit(1);
+  if (!movie) {
+    [movie] = await db.insert(movies).values({
+      title: "Dune: Part Two",
+      slug: "dune-part-two",
+      description: "Paul Atreides unites with Chani and the Fremen while on a warpath of revenge against the conspirators who destroyed his family.",
+      language: "English",
+      releaseDate: new Date("2024-03-01"),
+      duration: 166,
+      rating: "8.8",
+      price: "500",
+      isNowShowing: true,
+      posterUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&q=80",
+    }).returning();
+  }
+
+  // Seed Show
+  console.log("Seeding shows...");
+  const targetTheaterId2 = dbTheaters["star-cineplex-bashundhara-city"];
+  const [targetScreen2] = await db.select().from(cinemaScreens).where(eq(cinemaScreens.theatreId, targetTheaterId2)).limit(1);
+  
+  if (targetScreen2) {
+    let [show] = await db.select().from(shows).where(and(eq(shows.movieId, movie.id), eq(shows.screenId, targetScreen2.id))).limit(1);
+    if (!show) {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setHours(18, 0, 0, 0);
+      
+      const endTime = new Date(tomorrow);
+      endTime.setHours(21, 0, 0, 0);
+      
+      [show] = await db.insert(shows).values({
+        movieId: movie.id,
+        screenId: targetScreen2.id,
+        startTime: tomorrow,
+        endTime: endTime,
+        basePrice: "500",
+        availableSeats: targetScreen2.totalSeats,
+        status: "SCHEDULED",
+      }).returning();
+      
+      const screenSeats = await db.select().from(seats).where(eq(seats.screenId, targetScreen2.id));
+      if (screenSeats.length > 0) {
+        await db.insert(showSeats).values(
+          screenSeats.map(seat => ({
+            showId: show.id,
+            seatId: seat.id,
+            status: "AVAILABLE",
+          }))
+        );
+        console.log(`Successfully seeded show and show_seats for ${movie.title} at ${targetScreen2.name}`);
+      }
+    }
+  }
+
+  // Seed Bus Data
+  console.log("Seeding bus data...");
+  
+  // Locations
+  let [dhaka] = await db.select().from(locationsTable).where(eq(locationsTable.slug, "dhaka")).limit(1);
+  if (!dhaka) {
+    [dhaka] = await db.insert(locationsTable).values({ name: "Dhaka", slug: "dhaka", type: "CITY" }).returning();
+  }
+  let [ctg] = await db.select().from(locationsTable).where(eq(locationsTable.slug, "chittagong")).limit(1);
+  if (!ctg) {
+    [ctg] = await db.insert(locationsTable).values({ name: "Chittagong", slug: "chittagong", type: "CITY" }).returning();
+  }
+
+  // Routes
+  let [route] = await db.select().from(routesTable).where(eq(routesTable.slug, "dhaka-ctg")).limit(1);
+  if (!route) {
+    [route] = await db.insert(routesTable).values({
+      name: "Dhaka to Chittagong",
+      slug: "dhaka-ctg",
+      originId: dhaka.id,
+      destinationId: ctg.id,
+      distanceKm: "250.00",
+      estimatedDurationMins: 300
+    }).returning();
+  }
+
+  // Brand
+  let [brand] = await db.select().from(busBrands).where(eq(busBrands.slug, "green-line")).limit(1);
+  if (!brand) {
+    [brand] = await db.insert(busBrands).values({ name: "Green Line", slug: "green-line" }).returning();
+  }
+
+  // Bus Type
+  let [bType] = await db.select().from(busTypes).where(eq(busTypes.slug, "ac-sleeper")).limit(1);
+  if (!bType) {
+    const dummyLayout = {
+      rows: 5,
+      columns: 3,
+      seats: [
+        { row: 'A', seatNumber: '1', x: 0, y: 0, type: 'seat' },
+        { row: 'A', seatNumber: '2', x: 2, y: 0, type: 'seat' },
+        { row: 'B', seatNumber: '3', x: 0, y: 1, type: 'seat' },
+        { row: 'B', seatNumber: '4', x: 2, y: 1, type: 'seat' },
+      ]
+    };
+    [bType] = await db.insert(busTypes).values({
+      name: "AC Sleeper",
+      slug: "ac-sleeper",
+      isAC: true,
+      totalSeats: 4,
+      seatLayout: dummyLayout
+    }).returning();
+  }
+
+  // Bus
+  let [bus] = await db.select().from(busesTable).where(eq(busesTable.slug, "gl-dha-2201")).limit(1);
+  if (!bus) {
+    [bus] = await db.insert(busesTable).values({
+      registrationNo: "DHA-2201",
+      brandId: brand.id,
+      typeId: bType.id,
+      name: "Green Line 2201",
+      slug: "gl-dha-2201",
+    }).returning();
+    
+    // Insert Bus Seats dynamically based on type
+    if (bType.seatLayout && bType.seatLayout.seats) {
+      const seatsToInsert = bType.seatLayout.seats
+        .filter((s: any) => s.type !== 'empty')
+        .map((s: any) => ({
+          busId: bus.id,
+          row: s.row || '',
+          seatNumber: parseInt(String(s.seatNumber).replace(/\D/g, '')) || 0,
+          level: 1,
+          posX: String(s.x || 0),
+          posY: String(s.y || 0),
+          isAccessible: false,
+          isActive: true,
+        }));
+      if (seatsToInsert.length > 0) {
+        await db.insert(busesSeat).values(seatsToInsert);
+      }
+    }
+  }
+
+  // Trip
+  let [trip] = await db.select().from(busTrips).where(and(eq(busTrips.routeId, route.id), eq(busTrips.busId, bus.id))).limit(1);
+  if (!trip) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(22, 0, 0, 0);
+    const arrival = new Date(tomorrow);
+    arrival.setHours(22 + 5, 0, 0, 0);
+    
+    [trip] = await db.insert(busTrips).values({
+      routeId: route.id,
+      busId: bus.id,
+      departureTime: tomorrow,
+      arrivalTime: arrival,
+      basePrice: "1500",
+      status: "SCHEDULED"
+    }).returning();
   }
 
   console.log("Seeding completed successfully!");

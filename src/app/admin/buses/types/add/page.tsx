@@ -8,8 +8,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, Save, LayoutGrid, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Save, LayoutGrid, RotateCcw, Loader2 } from 'lucide-react'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 type SeatCell = {
   id: string
@@ -21,6 +22,7 @@ type SeatCell = {
 
 export default function AddBusTypePage() {
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({
     name: '',
     slug: '',
@@ -53,7 +55,6 @@ export default function AddBusTypePage() {
   }
 
   const updateLabels = (currentGrid: SeatCell[]) => {
-    let seatCount = 1
     const updated = currentGrid.map((cell) => {
       if (cell.type === 'empty' || cell.type === 'driver') {
         return { ...cell, label: '' }
@@ -99,6 +100,53 @@ export default function AddBusTypePage() {
     setForm((f) => ({ ...f, [k]: val > 40 ? 40 : val })) // limit to 40 max
   }
 
+  const handleSubmit = async () => {
+    if (!form.name || !form.slug) {
+      toast.error('Name and Slug are required')
+      return
+    }
+
+    const seatLayout = {
+      rows: form.rows,
+      columns: form.columns,
+      seats: grid.map(cell => ({
+        row: rowLabels[cell.rowIdx] || `R${cell.rowIdx}`,
+        seatNumber: cell.label || `${cell.rowIdx}-${cell.colIdx}`, // Use label or fallback for empty seats
+        x: cell.colIdx,
+        y: cell.rowIdx,
+        type: cell.type === 'driver' ? 'empty' : cell.type
+      }))
+    }
+
+    setLoading(true)
+    try {
+      const res = await fetch('/api/bus/types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name,
+          slug: form.slug,
+          description: form.description || undefined,
+          isAC: form.isAC,
+          totalSeats: totalSeats,
+          seatLayout: seatLayout,
+        })
+      })
+
+      if (!res.ok) {
+        const errData = await res.json()
+        throw new Error(errData.message || 'Failed to save bus type')
+      }
+
+      toast.success('Bus layout blueprint created successfully!')
+      router.push('/admin/buses/types')
+    } catch (err: any) {
+      toast.error(err.message || 'Error saving layout')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="flex-1 space-y-6 p-8 pt-6 max-w-5xl">
       <div className="flex items-center gap-4">
@@ -125,7 +173,7 @@ export default function AddBusTypePage() {
               <Input placeholder="e.g. AC Sleeper" value={form.name}
                 onChange={(e) => setForm((f) => ({
                   ...f, name: e.target.value,
-                  slug: e.target.value.toLowerCase().replace(/\s+/g, '-'),
+                  slug: e.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
                 }))} />
             </div>
             <div className="space-y-2">
@@ -208,8 +256,9 @@ export default function AddBusTypePage() {
       </div>
 
       <div className="flex justify-end gap-3 mt-6">
-        <Link href="/admin/buses/types"><Button variant="outline">Cancel</Button></Link>
-        <Button className="gap-2" onClick={() => router.push('/admin/buses/types')}>
+        <Link href="/admin/buses/types"><Button variant="outline" disabled={loading}>Cancel</Button></Link>
+        <Button className="gap-2" onClick={handleSubmit} disabled={loading}>
+          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
           <Save className="w-4 h-4" /> Save Bus Type
         </Button>
       </div>

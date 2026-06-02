@@ -58,6 +58,27 @@ export const MovieModel = {
 			availableSeats: t.Number(),
 		})
 	),
+	adminShowsResponse: t.Object({
+		items: t.Array(
+			t.Object({
+				id: t.String(),
+				movieId: t.String(),
+				movieTitle: t.String(),
+				screenId: t.String(),
+				screenName: t.String(),
+				theaterName: t.String(),
+				startTime: t.Any(),
+				endTime: t.Any(),
+				basePrice: t.String(),
+				status: t.String(),
+				availableSeats: t.Number(),
+			})
+		),
+		total: t.Number(),
+		page: t.Number(),
+		limit: t.Number(),
+		pages: t.Number(),
+	}),
 	createMovieBody: t.Object({
 		title: t.String(),
 		slug: t.String(),
@@ -82,7 +103,18 @@ export const MovieModel = {
 		basePrice: t.String(),
 		availableSeats: t.Number(),
 	}),
+	updateShowBody: t.Object({
+		startTime: t.Optional(t.String()),
+		endTime: t.Optional(t.String()),
+		basePrice: t.Optional(t.String()),
+		status: t.Optional(t.String()),
+		availableSeats: t.Optional(t.Number()),
+	}),
 	errorResponse: t.Object({
+		message: t.String(),
+	}),
+	successResponse: t.Object({
+		success: t.Boolean(),
 		message: t.String(),
 	}),
 } as const

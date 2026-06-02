@@ -238,6 +238,10 @@ export abstract class BusService {
 		if (slugExists.length > 0) throw status(400, { message: 'Bus slug already exists' })
 		const regExists = await db.select().from(busesTable).where(eq(busesTable.registrationNo, data.registrationNo)).limit(1)
 		if (regExists.length > 0) throw status(400, { message: 'Registration number already exists' })
+		
+		const [busType] = await db.select().from(busTypes).where(eq(busTypes.id, data.typeId)).limit(1)
+		if (!busType) throw status(400, { message: 'Bus type not found' })
+
 		const [bus] = await db.insert(busesTable).values({
 			registrationNo: data.registrationNo,
 			brandId: data.brandId,
@@ -250,6 +254,26 @@ export abstract class BusService {
 			description: data.description ?? null,
 			status: 'ACTIVE',
 		}).returning()
+
+		if (busType.seatLayout && busType.seatLayout.seats && Array.isArray(busType.seatLayout.seats)) {
+			const seatsToInsert = busType.seatLayout.seats
+				.filter(s => s.type !== 'empty')
+				.map(s => ({
+					busId: bus.id,
+					row: s.row || '',
+					seatNumber: parseInt(String(s.seatNumber).replace(/\D/g, '')) || 0,
+					level: 1,
+					posX: String(s.x || 0),
+					posY: String(s.y || 0),
+					isAccessible: false,
+					isActive: true,
+				}))
+
+			if (seatsToInsert.length > 0) {
+				await db.insert(busesSeat).values(seatsToInsert)
+			}
+		}
+
 		return bus
 	}
 
