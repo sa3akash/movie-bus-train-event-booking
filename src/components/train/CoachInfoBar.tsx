@@ -41,7 +41,7 @@ export const CoachInfoBar = ({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shrink-0
               ${c.id === activeCoachId
                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                : 'bg-white/10 text-white/70 hover:bg-white/20 backdrop-blur-md'
+                : 'bg-black text-white/70 hover:bg-black/10 backdrop-blur-md'
               }`}
           >
             {c.label}
