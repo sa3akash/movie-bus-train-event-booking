@@ -16,10 +16,10 @@ export const TrainVisualizer = ({
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // ── Drag state ──────────────────────────────────────────────────────────────
-  const isDragging    = useRef(false);
-  const dragStartX    = useRef(0);
-  const scrollStart   = useRef(0);
-  const hasDragged    = useRef(false);
+  const isDragging = useRef(false);
+  const dragStartX = useRef(0);
+  const scrollStart = useRef(0);
+  const hasDragged = useRef(false);
 
   // ── Non-passive wheel → horizontal scroll ───────────────────────────────────
   useEffect(() => {
@@ -36,9 +36,9 @@ export const TrainVisualizer = ({
   // ── Mouse drag ──────────────────────────────────────────────────────────────
   const onMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!scrollRef.current) return;
-    isDragging.current  = true;
-    hasDragged.current  = false;
-    dragStartX.current  = e.clientX;
+    isDragging.current = true;
+    hasDragged.current = false;
+    dragStartX.current = e.clientX;
     scrollStart.current = scrollRef.current.scrollLeft;
   }, []);
 
@@ -49,22 +49,28 @@ export const TrainVisualizer = ({
     scrollRef.current.scrollLeft = scrollStart.current - dx;
   }, []);
 
-  const stopDrag = useCallback(() => { isDragging.current = false; }, []);
+  const stopDrag = useCallback(() => {
+    isDragging.current = false;
+  }, []);
 
   const onClickCapture = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (hasDragged.current) { e.stopPropagation(); hasDragged.current = false; }
+    if (hasDragged.current) {
+      e.stopPropagation();
+      hasDragged.current = false;
+    }
   }, []);
 
   // ── Touch drag ──────────────────────────────────────────────────────────────
   const onTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     if (!scrollRef.current) return;
-    dragStartX.current  = e.touches[0].clientX;
+    dragStartX.current = e.touches[0].clientX;
     scrollStart.current = scrollRef.current.scrollLeft;
   }, []);
 
   const onTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
     if (!scrollRef.current) return;
-    scrollRef.current.scrollLeft = scrollStart.current - (e.touches[0].clientX - dragStartX.current);
+    scrollRef.current.scrollLeft =
+      scrollStart.current - (e.touches[0].clientX - dragStartX.current);
   }, []);
 
   return (
@@ -74,22 +80,36 @@ export const TrainVisualizer = ({
         height: "28rem",
         borderRadius: "0 0 2.5rem 2.5rem",
         // Rich dusk sky gradient
-        background: "linear-gradient(to bottom, #0a0a1a 0%, #0d1b3e 20%, #1a1040 40%, #2d1b4e 55%, #1a0d2e 70%, #0d1520 85%, #071018 100%)",
+        background:
+          "linear-gradient(to bottom, #0a0a1a 0%, #0d1b3e 20%, #1a1040 40%, #2d1b4e 55%, #1a0d2e 70%, #0d1520 85%, #071018 100%)",
         boxShadow: "0 8px 48px rgba(0,0,0,0.8)",
       }}
     >
       {/* ── Stars ── */}
       {[
-        [12, 8], [25, 5], [38, 12], [52, 4], [65, 9], [78, 6], [88, 14],
-        [18, 18], [45, 7], [70, 16], [92, 8], [5, 22], [33, 3], [60, 20], [82, 11],
+        [12, 8],
+        [25, 5],
+        [38, 12],
+        [52, 4],
+        [65, 9],
+        [78, 6],
+        [88, 14],
+        [18, 18],
+        [45, 7],
+        [70, 16],
+        [92, 8],
+        [5, 22],
+        [33, 3],
+        [60, 20],
+        [82, 11],
       ].map(([x, y], i) => (
         <div
           key={i}
           className="absolute rounded-full pointer-events-none"
           style={{
             left: `${x}%`,
-            top:  `${y}%`,
-            width:  i % 3 === 0 ? "2px" : "1px",
+            top: `${y}%`,
+            width: i % 3 === 0 ? "2px" : "1px",
             height: i % 3 === 0 ? "2px" : "1px",
             background: "#fff",
             opacity: 0.4 + (i % 4) * 0.15,
@@ -102,19 +122,25 @@ export const TrainVisualizer = ({
       <div
         className="absolute pointer-events-none"
         style={{
-          top: "6%", right: "8%",
-          width: "36px", height: "36px",
+          top: "6%",
+          right: "8%",
+          width: "36px",
+          height: "36px",
           borderRadius: "50%",
-          background: "radial-gradient(circle at 35% 35%, #fef9c3, #fde68a, #d97706)",
-          boxShadow: "0 0 24px rgba(253,230,138,0.5), 0 0 60px rgba(253,230,138,0.2)",
+          background:
+            "radial-gradient(circle at 35% 35%, #fef9c3, #fde68a, #d97706)",
+          boxShadow:
+            "0 0 24px rgba(253,230,138,0.5), 0 0 60px rgba(253,230,138,0.2)",
         }}
       />
       {/* Moon crescent shadow */}
       <div
         className="absolute pointer-events-none"
         style={{
-          top: "5.2%", right: "6.8%",
-          width: "32px", height: "32px",
+          top: "5.2%",
+          right: "6.8%",
+          width: "32px",
+          height: "32px",
           borderRadius: "50%",
           background: "rgba(13,27,62,0.7)",
         }}
@@ -167,7 +193,8 @@ export const TrainVisualizer = ({
         style={{
           bottom: "0",
           height: "5rem",
-          background: "linear-gradient(to top, #050d14 0%, #071018 60%, transparent 100%)",
+          background:
+            "linear-gradient(to top, #050d14 0%, #071018 60%, transparent 100%)",
         }}
       />
 
@@ -177,7 +204,8 @@ export const TrainVisualizer = ({
         style={{
           bottom: "0",
           height: "4rem",
-          background: "radial-gradient(ellipse at 40% 100%, rgba(56,189,248,0.08) 0%, rgba(168,85,247,0.06) 50%, transparent 80%)",
+          background:
+            "radial-gradient(ellipse at 40% 100%, rgba(56,189,248,0.08) 0%, rgba(168,85,247,0.06) 50%, transparent 80%)",
         }}
       />
 
@@ -211,7 +239,8 @@ export const TrainVisualizer = ({
           bottom: "2.3rem",
           height: "4px",
           background: "linear-gradient(to bottom, #64748b, #475569)",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.8), 0 0 12px rgba(100,116,139,0.3)",
+          boxShadow:
+            "0 2px 8px rgba(0,0,0,0.8), 0 0 12px rgba(100,116,139,0.3)",
         }}
       />
 
@@ -222,7 +251,8 @@ export const TrainVisualizer = ({
           bottom: "3.2rem",
           height: "4px",
           background: "linear-gradient(to bottom, #94a3b8, #64748b)",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.6), 0 0 16px rgba(148,163,184,0.25)",
+          boxShadow:
+            "0 2px 6px rgba(0,0,0,0.6), 0 0 16px rgba(148,163,184,0.25)",
         }}
       />
 
@@ -255,11 +285,10 @@ export const TrainVisualizer = ({
           paddingLeft: "1rem",
           paddingRight: "3rem",
           paddingBottom: "0",
-          paddingTop: "6rem",
+          paddingTop: "10rem",
         }}
       >
         <div className="flex items-end flex-nowrap" style={{ gap: 0 }}>
-
           {/* ──────────── Locomotive (Classic Luxury Metallic) ──────────── */}
           <div className="flex items-end shrink-0">
             <div
@@ -276,9 +305,11 @@ export const TrainVisualizer = ({
                 className="absolute inset-0"
                 style={{
                   borderRadius: "3rem 6px 3px 3px",
-                  background: "linear-gradient(160deg, #1e3a5f 0%, #0f2540 40%, #081326 100%)",
+                  background:
+                    "linear-gradient(160deg, #1e3a5f 0%, #0f2540 40%, #081326 100%)",
                   border: "1px solid #0284c7",
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.1)",
+                  boxShadow:
+                    "0 8px 24px rgba(0,0,0,0.8), inset 0 2px 4px rgba(255,255,255,0.1)",
                   overflow: "hidden",
                 }}
               >
@@ -290,11 +321,12 @@ export const TrainVisualizer = ({
                     left: 0,
                     right: 0,
                     height: "15%",
-                    background: "linear-gradient(to bottom, rgba(255,255,255,0.15), transparent)",
+                    background:
+                      "linear-gradient(to bottom, rgba(255,255,255,0.15), transparent)",
                     pointerEvents: "none",
                   }}
                 />
-                
+
                 {/* Front nose highlight */}
                 <div
                   style={{
@@ -303,7 +335,8 @@ export const TrainVisualizer = ({
                     left: "0",
                     width: "40%",
                     height: "100%",
-                    background: "linear-gradient(90deg, rgba(255,255,255,0.08), transparent)",
+                    background:
+                      "linear-gradient(90deg, rgba(255,255,255,0.08), transparent)",
                     pointerEvents: "none",
                   }}
                 />
@@ -323,21 +356,22 @@ export const TrainVisualizer = ({
                   }}
                 />
 
-                {/* Number plate printed on body */}
+                {/* Engine Name (Premium Metallic Text - Bottom Left) */}
                 <div
                   style={{
                     position: "absolute",
-                    top: "65%",
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    fontSize: "10px",
+                    top: "75%",
+                    right: "12px",
+                    fontSize: "9px",
                     fontWeight: 900,
-                    color: "rgba(255,255,255,0.85)",
+                    color: "rgba(255,255,255,0.95)",
                     letterSpacing: "0.2em",
-                    textShadow: "1px 1px 2px rgba(0,0,0,0.8)",
+                    textShadow:
+                      "1px 1px 3px rgba(0,0,0,0.9), 0 0 8px rgba(255,255,255,0.4)",
+                    zIndex: 10,
                   }}
                 >
-                  ENG-1
+                  ENGINE
                 </div>
 
                 {/* Cab window (Warm interior glow) */}
@@ -349,9 +383,11 @@ export const TrainVisualizer = ({
                     width: "35%",
                     height: "35%",
                     borderRadius: "1rem 0 0.2rem 0",
-                    background: "linear-gradient(135deg, #fef08a 0%, #ca8a04 100%)",
+                    background:
+                      "linear-gradient(135deg, #fef08a 0%, #ca8a04 100%)",
                     border: "1px solid #000000",
-                    boxShadow: "inset 0 2px 6px rgba(0,0,0,0.8), 0 0 15px rgba(253,224,71,0.3)",
+                    boxShadow:
+                      "inset 0 2px 6px rgba(0,0,0,0.8), 0 0 15px rgba(253,224,71,0.3)",
                     overflow: "hidden",
                   }}
                 >
@@ -375,7 +411,8 @@ export const TrainVisualizer = ({
                       left: 0,
                       width: "100%",
                       height: "40%",
-                      background: "linear-gradient(to bottom, rgba(255,255,255,0.4), transparent)",
+                      background:
+                        "linear-gradient(to bottom, rgba(255,255,255,0.4), transparent)",
                     }}
                   />
                 </div>
@@ -389,21 +426,23 @@ export const TrainVisualizer = ({
                     width: "18%",
                     height: "30%",
                     borderRadius: "2px",
-                    background: "linear-gradient(135deg, #fef08a 0%, #ca8a04 100%)",
+                    background:
+                      "linear-gradient(135deg, #fef08a 0%, #ca8a04 100%)",
                     border: "1px solid #000000",
                     boxShadow: "inset 0 2px 6px rgba(0,0,0,0.8)",
                     overflow: "hidden",
                   }}
                 >
-                   {/* Glass glare */}
-                   <div
+                  {/* Glass glare */}
+                  <div
                     style={{
                       position: "absolute",
                       top: 0,
                       left: 0,
                       width: "100%",
                       height: "40%",
-                      background: "linear-gradient(to bottom, rgba(255,255,255,0.4), transparent)",
+                      background:
+                        "linear-gradient(to bottom, rgba(255,255,255,0.4), transparent)",
                     }}
                   />
                 </div>
@@ -418,10 +457,11 @@ export const TrainVisualizer = ({
                     height: "12px",
                     borderRadius: "50%",
                     background: "#fef08a",
-                    boxShadow: "0 0 20px rgba(253,224,71,1), 0 0 50px rgba(253,224,71,0.6)",
+                    boxShadow:
+                      "0 0 20px rgba(253,224,71,1), 0 0 50px rgba(253,224,71,0.6)",
                   }}
                 />
-                
+
                 {/* Exhaust / ventilation slats */}
                 {[0, 1, 2].map((i) => (
                   <div
@@ -469,9 +509,11 @@ export const TrainVisualizer = ({
                       width: "24px",
                       height: "24px",
                       borderRadius: "50%",
-                      background: "radial-gradient(circle at 35% 35%, #64748b 0%, #334155 50%, #0f172a 100%)",
+                      background:
+                        "radial-gradient(circle at 35% 35%, #64748b 0%, #334155 50%, #0f172a 100%)",
                       border: "2px solid #1e293b",
-                      boxShadow: "0 2px 5px rgba(0,0,0,0.8), inset 0 1px 2px rgba(255,255,255,0.15)",
+                      boxShadow:
+                        "0 2px 5px rgba(0,0,0,0.8), inset 0 1px 2px rgba(255,255,255,0.15)",
                       position: "relative",
                       zIndex: 1,
                     }}
@@ -481,7 +523,8 @@ export const TrainVisualizer = ({
                         position: "absolute",
                         inset: "5px",
                         borderRadius: "50%",
-                        background: "radial-gradient(circle at 40% 40%, #94a3b8, #475569)",
+                        background:
+                          "radial-gradient(circle at 40% 40%, #94a3b8, #475569)",
                         boxShadow: "inset 0 1px 2px rgba(0,0,0,0.8)",
                       }}
                     />

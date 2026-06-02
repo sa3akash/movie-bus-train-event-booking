@@ -124,25 +124,27 @@ export const CoachCard = ({ coach, active, onClick }: CoachCardProps) => {
   return (
     <button
       onClick={onClick}
-      className="relative shrink-0 focus:outline-none group transition-all duration-300"
+      className="relative shrink-0 focus:outline-none group transition-all duration-500"
       style={{ 
         width: W, 
         height: H, 
         marginBottom: "22px",
-        transform: active ? "scale(1.03) translateY(-2px)" : "scale(1)",
+        transform: "scale(1)",
         zIndex: active ? 10 : 1,
+        opacity: active ? 1 : 0.8,
+        filter: active ? "brightness(1.1) contrast(1.05)" : "brightness(0.75)",
       }}
     >
       {/* ── Main body (Rich Metallic Paint) ── */}
       <div
-        className="absolute transition-all duration-300"
+        className="absolute transition-all duration-500"
         style={{
           inset: 0,
           borderRadius: "6px 6px 3px 3px",
           background: `linear-gradient(160deg, ${paint.body[0]} 0%, ${paint.body[1]} 40%, ${paint.body[2]} 100%)`,
-          border: active ? `1.5px solid ${paint.color}` : `1px solid ${paint.trim}`,
+          border: `1px solid ${active ? paint.color : paint.trim}`,
           boxShadow: active
-            ? `0 0 20px rgba(0,0,0,0.6), 0 0 15px ${paint.color}66, inset 0 2px 4px rgba(255,255,255,0.1)`
+            ? `0 0 25px rgba(0,0,0,0.9), 0 -15px 40px ${paint.color}33, inset 0 2px 8px rgba(255,255,255,0.25)`
             : `0 4px 12px rgba(0,0,0,0.7), inset 0 1px 2px rgba(255,255,255,0.05)`,
           overflow: "hidden",
         }}
@@ -348,35 +350,37 @@ export const CoachItem = ({ coach, isActive, isLast, onSelect }: CoachItemProps)
         {isActive && (
           <div
             className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center z-20 pointer-events-none"
-            style={{ bottom: "calc(100% + 3.5rem)" }}
+            style={{ bottom: "calc(100% + 3.8rem)" }}
           >
             <div
               style={{
                 color: "#ffffff",
-                background: paint.color,
-                fontSize: "7px",
+                background: `linear-gradient(to bottom, ${paint.color}, ${paint.trim})`,
+                fontSize: "8px",
                 fontWeight: 900,
-                letterSpacing: "0.2em",
-                padding: "3px 10px",
-                borderRadius: "12px",
+                letterSpacing: "0.25em",
+                padding: "4px 12px",
+                borderRadius: "4px",
+                border: "1px solid rgba(255,255,255,0.4)",
                 whiteSpace: "nowrap",
                 display: "flex",
                 alignItems: "center",
-                gap: "4px",
-                boxShadow: `0 4px 8px rgba(0,0,0,0.4), 0 0 15px ${paint.color}99`,
-                animation: "pulse 2s ease-in-out infinite",
+                gap: "6px",
+                boxShadow: `0 8px 16px rgba(0,0,0,0.6), 0 0 20px ${paint.color}aa`,
+                animation: "pulse 2.5s ease-in-out infinite",
               }}
             >
-              <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: "#fff", boxShadow: "0 0 4px #fff" }} />
+              <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#fff", boxShadow: "0 0 6px #fff" }} />
               VIEWING
             </div>
-            {/* Connector line */}
+            {/* Connector line / Light beam */}
             <div
               style={{
                 width: "2px",
-                height: "26px",
+                height: "28px",
                 background: `linear-gradient(to bottom, ${paint.color}, transparent)`,
                 marginTop: "2px",
+                opacity: 0.8,
               }}
             />
           </div>
