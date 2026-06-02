@@ -17,6 +17,11 @@ export const movie = new Elysia({ prefix: '/movie' })
 			response: {
 				200: MovieModel.listResponse,
 			},
+			detail: {
+				tags: ['Movie'],
+				summary: 'Get all movies',
+				description: 'Get all movies'
+			}
 		}
 	)
 	.get(
@@ -32,6 +37,11 @@ export const movie = new Elysia({ prefix: '/movie' })
 				200: MovieModel.movieResponse,
 				404: MovieModel.errorResponse,
 			},
+			detail: {
+				tags: ['Movie'],
+				summary: 'Get movie by slug',
+				description: 'Get movie by slug'
+			}
 		}
 	)
 	.get(
@@ -46,6 +56,11 @@ export const movie = new Elysia({ prefix: '/movie' })
 			response: {
 				200: MovieModel.showsListResponse,
 			},
+			detail: {
+				tags: ['Movie'],
+				summary: 'Get shows for a movie',
+				description: 'Get shows for a movie'
+			}
 		}
 	)
 	// Admin protected routes
@@ -61,6 +76,11 @@ export const movie = new Elysia({ prefix: '/movie' })
 				200: MovieModel.movieResponse,
 				400: MovieModel.errorResponse,
 			},
+			detail: {
+				tags: ['Movie'],
+				summary: 'Create a movie',
+				description: 'Create a movie'
+			}
 		}
 	)
 	.post(
@@ -74,5 +94,10 @@ export const movie = new Elysia({ prefix: '/movie' })
 				200: MovieModel.showResponse,
 				400: MovieModel.errorResponse,
 			},
+			detail: {
+				tags: ['Movie'],
+				summary: 'Create a show',
+				description: 'Create a show'
+			}
 		}
 	)

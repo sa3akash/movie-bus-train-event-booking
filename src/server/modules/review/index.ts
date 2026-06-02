@@ -16,6 +16,11 @@ export const review = new Elysia({ prefix: '/review' })
 			response: {
 				200: ReviewModel.listReviewsResponse,
 			},
+			detail: {
+				tags: ['Review'],
+				summary: 'Get reviews for a movie',
+				description: 'Get reviews for a movie'
+			}
 		}
 	)
 	.use(isAuthenticated)
@@ -31,5 +36,10 @@ export const review = new Elysia({ prefix: '/review' })
 				400: ReviewModel.errorResponse,
 				404: ReviewModel.errorResponse,
 			},
+			detail: {
+				tags: ['Review'],
+				summary: 'Create a review',
+				description: 'Create a review'
+			}
 		}
 	)

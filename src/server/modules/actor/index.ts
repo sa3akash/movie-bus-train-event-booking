@@ -15,6 +15,11 @@ export const actor = new Elysia({ prefix: '/actor' })
 			response: {
 				200: ActorModel.listResponse,
 			},
+			detail: {
+				tags: ['Actor'],
+				summary: 'Get all actors',
+				description: 'Get all actors'
+			}
 		}
 	)
 	.post(
@@ -28,6 +33,11 @@ export const actor = new Elysia({ prefix: '/actor' })
 				200: ActorModel.actorResponse,
 				400: ActorModel.errorResponse,
 			},
+			detail: {
+				tags: ['Actor'],
+				summary: 'Create actor',
+				description: 'Create actor'
+			}
 		}
 	)
 	.get(
@@ -43,6 +53,11 @@ export const actor = new Elysia({ prefix: '/actor' })
 				200: ActorModel.actorResponse,
 				404: ActorModel.errorResponse,
 			},
+			detail: {
+				tags: ['Actor'],
+				summary: 'Get actor by id',
+				description: 'Get actor by id'
+			}
 		}
 	)
 	.get(
@@ -58,6 +73,11 @@ export const actor = new Elysia({ prefix: '/actor' })
 				200: ActorModel.actorResponse,
 				404: ActorModel.errorResponse,
 			},
+			detail: {
+				tags: ['Actor'],
+				summary: 'Get actor by slug',
+				description: 'Get actor by slug'
+			}
 		}
 	)
 	.patch(
@@ -75,6 +95,11 @@ export const actor = new Elysia({ prefix: '/actor' })
 				400: ActorModel.errorResponse,
 				404: ActorModel.errorResponse,
 			},
+			detail: {
+				tags: ['Actor'],
+				summary: 'Update actor',
+				description: 'Update actor'
+			}
 		}
 	)
 	.delete(
@@ -90,5 +115,10 @@ export const actor = new Elysia({ prefix: '/actor' })
 				200: ActorModel.actorResponse,
 				404: ActorModel.errorResponse,
 			},
+			detail: {
+				tags: ['Actor'],
+				summary: 'Delete actor',
+				description: 'Delete actor'
+			}
 		}
 	)

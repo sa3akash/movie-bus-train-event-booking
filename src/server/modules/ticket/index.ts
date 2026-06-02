@@ -20,6 +20,11 @@ export const ticket = new Elysia({ prefix: '/ticket' })
 				403: TicketModel.errorResponse,
 				404: TicketModel.errorResponse,
 			},
+			detail: {
+				tags: ['Ticket'],
+				summary: 'Get ticket details',
+				description: 'Get ticket details'
+			}
 		}
 	)
 	.get(
@@ -34,6 +39,11 @@ export const ticket = new Elysia({ prefix: '/ticket' })
 			params: t.Object({
 				bookingId: t.String(),
 			}),
+			detail: {
+				tags: ['Ticket'],
+				summary: 'Generate ticket PDF',
+				description: 'Generate ticket PDF'
+			}
 		}
 	)
 	.get(
@@ -47,6 +57,11 @@ export const ticket = new Elysia({ prefix: '/ticket' })
 			params: t.Object({
 				bookingId: t.String(),
 			}),
+			detail: {
+				tags: ['Ticket'],
+				summary: 'Generate ticket QR code',
+				description: 'Generate ticket QR code'
+			}
 		}
 	)
 	.use(isAdminOrStaff)
@@ -64,5 +79,10 @@ export const ticket = new Elysia({ prefix: '/ticket' })
 				400: TicketModel.errorResponse,
 				404: TicketModel.errorResponse,
 			},
+			detail: {
+				tags: ['Ticket'],
+				summary: 'Check in for a booking',
+				description: 'Check in for a booking'
+			}
 		}
 	)

@@ -15,6 +15,11 @@ export const admin = new Elysia({ prefix: '/admin' })
 				200: AdminModel.dashboardStatsResponse,
 				400: AdminModel.errorResponse,
 			},
+			detail: {
+				tags: ['Admin'],
+				summary: 'Get dashboard stats',
+				description: 'Get dashboard stats'
+			}
 		}
 	)
 	.get(
@@ -30,6 +35,11 @@ export const admin = new Elysia({ prefix: '/admin' })
 				200: AdminModel.listAllBookingsResponse,
 				400: AdminModel.errorResponse,
 			},
+			detail: {
+				tags: ['Admin'],
+				summary: 'Get all bookings',
+				description: 'Get all bookings'
+			}
 		}
 	)
 	.post(
@@ -47,5 +57,10 @@ export const admin = new Elysia({ prefix: '/admin' })
 				400: AdminModel.errorResponse,
 				404: AdminModel.errorResponse,
 			},
+			detail: {
+				tags: ['Admin'],
+				summary: 'Assign role to user',
+				description: 'Assign role to user'
+			}
 		}
 	)

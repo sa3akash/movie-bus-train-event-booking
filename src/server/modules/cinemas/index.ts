@@ -17,6 +17,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 			response: {
 				200: CinemaModel.listTheatersResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Get all theaters',
+				description: 'Get all theaters'
+			}
 		}
 	)
 	.get(
@@ -29,6 +34,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 			response: {
 				200: CinemaModel.paginatedChainsResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Get all chains',
+				description: 'Get all chains'
+			}
 		}
 	)
 	.get(
@@ -41,6 +51,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 			response: {
 				200: CinemaModel.paginatedAdminTheatersResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Get all theaters',
+				description: 'Get all theaters'
+			}
 		}
 	)
 	.get(
@@ -53,6 +68,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 			response: {
 				200: CinemaModel.paginatedAllAdminScreensResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Get all screens',
+				description: 'Get all screens'
+			}
 		}
 	)
 	.get(
@@ -68,6 +88,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 				200: CinemaModel.theaterResponse,
 				404: CinemaModel.errorResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Get theater by slug',
+				description: 'Get theater by slug'
+			}
 		}
 	)
 	.get(
@@ -82,6 +107,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 			response: {
 				200: CinemaModel.listScreensResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Get screens for a theater',
+				description: 'Get screens for a theater'
+			}
 		}
 	)
 	.get(
@@ -97,6 +127,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 				200: CinemaModel.screenResponse,
 				404: CinemaModel.errorResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Get screen by id',
+				description: 'Get screen by id'
+			}
 		}
 	)
 	// Admin protected routes
@@ -112,6 +147,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 				200: CinemaModel.theaterResponse,
 				400: CinemaModel.errorResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Create a theater',
+				description: 'Create a theater'
+			}
 		}
 	)
 	.put(
@@ -129,6 +169,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 				400: CinemaModel.errorResponse,
 				404: CinemaModel.errorResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Update a theater',
+				description: 'Update a theater'
+			}
 		}
 	)
 	.delete(
@@ -144,6 +189,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 				200: t.Object({ message: t.String() }),
 				404: CinemaModel.errorResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Delete a theater',
+				description: 'Delete a theater'
+			}
 		}
 	)
 	.post(
@@ -157,6 +207,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 				200: CinemaModel.chainResponse,
 				400: CinemaModel.errorResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Create a chain',
+				description: 'Create a chain'
+			}
 		}
 	)
 	.put(
@@ -174,6 +229,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 				400: CinemaModel.errorResponse,
 				404: CinemaModel.errorResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Update a chain',
+				description: 'Update a chain'
+			}
 		}
 	)
 	.delete(
@@ -189,6 +249,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 				200: t.Object({ message: t.String() }),
 				404: CinemaModel.errorResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Delete a chain',
+				description: 'Delete a chain'
+			}
 		}
 	)
 	.post(
@@ -202,6 +267,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 				200: CinemaModel.screenResponse,
 				400: CinemaModel.errorResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Create a screen',
+				description: 'Create a screen'
+			}
 		}
 	)
 	.put(
@@ -219,6 +289,11 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 				400: CinemaModel.errorResponse,
 				404: CinemaModel.errorResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Update a screen',
+				description: 'Update a screen'
+			}
 		}
 	)
 	.delete(
@@ -234,5 +309,10 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 				200: t.Object({ message: t.String() }),
 				404: CinemaModel.errorResponse,
 			},
+			detail: {
+				tags: ['Cinemas'],
+				summary: 'Delete a screen',
+				description: 'Delete a screen'
+			}
 		}
 	)

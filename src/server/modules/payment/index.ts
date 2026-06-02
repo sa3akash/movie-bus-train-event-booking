@@ -17,5 +17,10 @@ export const payment = new Elysia({ prefix: '/payment' })
 				400: PaymentModel.errorResponse,
 				404: PaymentModel.errorResponse,
 			},
+			detail: {
+				tags: ['Payment'],
+				summary: 'Pay for a booking',
+				description: 'Pay for a booking'
+			}
 		}
 	)

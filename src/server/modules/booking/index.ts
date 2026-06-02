@@ -16,6 +16,11 @@ export const booking = new Elysia({ prefix: '/booking' })
 				200: BookingModel.bookingResponse,
 				400: BookingModel.errorResponse,
 			},
+			detail: {
+				tags: ['Booking'],
+				summary: 'Create a booking',
+				description: 'Create a booking'
+			}
 		}
 	)
 	.get(
@@ -27,6 +32,11 @@ export const booking = new Elysia({ prefix: '/booking' })
 			response: {
 				200: BookingModel.listBookingsResponse,
 			},
+			detail: {
+				tags: ['Booking'],
+				summary: 'Get user bookings',
+				description: 'Get user bookings'
+			}
 		}
 	)
 	.post(
@@ -43,5 +53,10 @@ export const booking = new Elysia({ prefix: '/booking' })
 				400: BookingModel.errorResponse,
 				404: BookingModel.errorResponse,
 			},
+			detail: {
+				tags: ['Booking'],
+				summary: 'Cancel a booking',
+				description: 'Cancel a booking'
+			}
 		}
 	)

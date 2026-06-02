@@ -18,6 +18,11 @@ export const seats = new Elysia({ prefix: '/seats' })
 			response: {
 				200: t.Array(SeatModel.seatTypeResponse),
 			},
+			detail: {
+				tags: ['Seats'],
+				summary: 'Get all seat types',
+				description: 'Get all seat types'
+			}
 		}
 	)
 	.get(
@@ -32,6 +37,11 @@ export const seats = new Elysia({ prefix: '/seats' })
 			response: {
 				200: SeatModel.listShowSeatsResponse,
 			},
+			detail: {
+				tags: ['Seats'],
+				summary: 'Get seats for a show',
+				description: 'Get seats for a show'
+			}
 		}
 	)
 	// Admin protected routes
@@ -47,6 +57,11 @@ export const seats = new Elysia({ prefix: '/seats' })
 				200: SeatModel.seatTypeResponse,
 				400: SeatModel.errorResponse,
 			},
+			detail: {
+				tags: ['Seats'],
+				summary: 'Create a seat type',
+				description: 'Create a seat type'
+			}
 		}
 	)
 	.put(
@@ -62,6 +77,11 @@ export const seats = new Elysia({ prefix: '/seats' })
 				400: SeatModel.errorResponse,
 				404: SeatModel.errorResponse,
 			},
+			detail: {
+				tags: ['Seats'],
+				summary: 'Update a seat type',
+				description: 'Update a seat type'
+			}
 		}
 	)
 	.delete(
@@ -75,6 +95,11 @@ export const seats = new Elysia({ prefix: '/seats' })
 				200: SeatModel.deleteResponse,
 				404: SeatModel.errorResponse,
 			},
+			detail: {
+				tags: ['Seats'],
+				summary: 'Delete a seat type',
+				description: 'Delete a seat type'
+			}
 		}
 	)
 	.post(
@@ -88,5 +113,10 @@ export const seats = new Elysia({ prefix: '/seats' })
 				200: t.Array(SeatModel.seatResponse),
 				400: SeatModel.errorResponse,
 			},
+			detail: {
+				tags: ['Seats'],
+				summary: 'Create seats',
+				description: 'Create seats'
+			}
 		}
 	)
