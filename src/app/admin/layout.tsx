@@ -24,7 +24,9 @@ const layout = ({ children }: PropsWithChildren) => {
             <AdminBreadcrumb />
           </div>
         </header>
-        {children}
+        <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+          {children}
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

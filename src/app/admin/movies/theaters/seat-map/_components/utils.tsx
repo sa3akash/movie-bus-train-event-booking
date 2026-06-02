@@ -90,11 +90,12 @@ export function buildGrid(
   defaultTypeId: string | null,
   options: GenerationOptions
 ): SeatCell[][] {
+
   const customAisleSet = new Set(
-    options.customAisles.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
+    options.customAisles?.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
   );
   const customWalkwaySet = new Set(
-    options.customWalkways.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
+    options.customWalkways?.split(",").map((s) => parseInt(s.trim())).filter((n) => !isNaN(n))
   );
 
   return Array.from({ length: rows }, (_, ri) =>

@@ -22,6 +22,13 @@
       "when": 1780389252065,
       "tag": "0002_common_mongoose",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1780398125639,
+      "tag": "0003_material_lake",
+      "breakpoints": true
     }
   ]
 }

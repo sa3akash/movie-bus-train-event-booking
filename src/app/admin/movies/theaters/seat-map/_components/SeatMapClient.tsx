@@ -96,7 +96,9 @@ const SeatMapClient = ({ screenId }: SeatMapClientProps) => {
         const c = layout.columns;
         setRows(r);
         setCols(c);
-        const baseGrid = buildGrid(r, c, seatTypes[0]?.id ?? null);
+        const baseGrid = buildGrid(r, c, seatTypes[0]?.id ?? null,{
+          
+        });
         const occupiedKeys = new Set(
           layout.seats.map((s: any) => `${s.row}:${s.seatNumber}`),
         );
