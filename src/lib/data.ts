@@ -2088,8 +2088,8 @@ export const planeLayout: BusLayout = {
   ]
 }
 export const trainCouchLayout: BusLayout = {
-  "rows": 11,
-  "columns": 5,
+  "rows": 15,
+  "columns": 7,
   "seats": [
     {
       "row": "A",
@@ -2097,104 +2097,23 @@ export const trainCouchLayout: BusLayout = {
       "x": 0,
       "y": 0,
       "type": "seat",
-      "isActive": false,
+      "isActive": true,
       "isAccessible": false
-    },
-    {
-      "row": "B",
-      "seatNumber": 1,
-      "x": 0,
-      "y": 1,
-      "type": "seat",
-      "isActive": false,
-      "isAccessible": false,
     },
     {
       "row": "A",
       "seatNumber": 3,
-      "x": 3,
-      "y": 0,
-      "type": "seat",
-      "isActive": false,
-      "isAccessible": false,
-    },
-    {
-      "row": "C",
-      "seatNumber": 1,
-      "x": 0,
-      "y": 2,
-      "type": "seat",
-      "isActive": true,
-      "isAccessible": false
-    },
-    {
-      "row": "D",
-      "seatNumber": 1,
-      "x": 0,
-      "y": 3,
-      "type": "seat",
-      "isActive": true,
-      "isAccessible": false
-    },
-    {
-      "row": "E",
-      "seatNumber": 1,
-      "x": 0,
-      "y": 4,
-      "type": "seat",
-      "isActive": true,
-      "isAccessible": false
-    },
-    {
-      "row": "E",
-      "seatNumber": 2,
-      "x": 1,
-      "y": 4,
-      "type": "seat",
-      "isActive": true,
-      "isAccessible": false
-    },
-    {
-      "row": "D",
-      "seatNumber": 2,
-      "x": 1,
-      "y": 3,
-      "type": "seat",
-      "isActive": true,
-      "isAccessible": false
-    },
-    {
-      "row": "C",
-      "seatNumber": 2,
-      "x": 1,
-      "y": 2,
-      "type": "seat",
-      "isActive": true,
-      "isAccessible": false
-    },
-    {
-      "row": "B",
-      "seatNumber": 2,
-      "x": 1,
-      "y": 1,
-      "type": "seat",
-      "isActive": true,
-      "isAccessible": false
-    },
-    {
-      "row": "A",
-      "seatNumber": 2,
-      "x": 1,
+      "x": 2,
       "y": 0,
       "type": "seat",
       "isActive": true,
       "isAccessible": false
     },
     {
-      "row": "C",
-      "seatNumber": 3,
-      "x": 3,
-      "y": 2,
+      "row": "B",
+      "seatNumber": 1,
+      "x": 0,
+      "y": 1,
       "type": "seat",
       "isActive": true,
       "isAccessible": false
@@ -2202,16 +2121,34 @@ export const trainCouchLayout: BusLayout = {
     {
       "row": "B",
       "seatNumber": 3,
-      "x": 3,
+      "x": 2,
       "y": 1,
       "type": "seat",
       "isActive": true,
       "isAccessible": false
     },
     {
-      "row": "D",
+      "row": "C",
       "seatNumber": 3,
-      "x": 3,
+      "x": 2,
+      "y": 2,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "C",
+      "seatNumber": 1,
+      "x": 0,
+      "y": 2,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "D",
+      "seatNumber": 1,
+      "x": 0,
       "y": 3,
       "type": "seat",
       "isActive": true,
@@ -2219,9 +2156,54 @@ export const trainCouchLayout: BusLayout = {
     },
     {
       "row": "E",
-      "seatNumber": 3,
-      "x": 3,
+      "seatNumber": 1,
+      "x": 0,
       "y": 4,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "E",
+      "seatNumber": 2,
+      "x": 1,
+      "y": 4,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "D",
+      "seatNumber": 2,
+      "x": 1,
+      "y": 3,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "C",
+      "seatNumber": 2,
+      "x": 1,
+      "y": 2,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "B",
+      "seatNumber": 2,
+      "x": 1,
+      "y": 1,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "A",
+      "seatNumber": 2,
+      "x": 1,
+      "y": 0,
       "type": "seat",
       "isActive": true,
       "isAccessible": false
@@ -2284,15 +2266,6 @@ export const trainCouchLayout: BusLayout = {
       "row": "F",
       "seatNumber": 2,
       "x": 1,
-      "y": 5,
-      "type": "seat",
-      "isActive": true,
-      "isAccessible": false
-    },
-    {
-      "row": "F",
-      "seatNumber": 3,
-      "x": 3,
       "y": 5,
       "type": "seat",
       "isActive": true,
@@ -2320,15 +2293,6 @@ export const trainCouchLayout: BusLayout = {
       "row": "G",
       "seatNumber": 2,
       "x": 1,
-      "y": 6,
-      "type": "seat",
-      "isActive": true,
-      "isAccessible": false
-    },
-    {
-      "row": "G",
-      "seatNumber": 3,
-      "x": 3,
       "y": 6,
       "type": "seat",
       "isActive": true,
@@ -2356,15 +2320,6 @@ export const trainCouchLayout: BusLayout = {
       "row": "H",
       "seatNumber": 2,
       "x": 1,
-      "y": 7,
-      "type": "seat",
-      "isActive": true,
-      "isAccessible": false
-    },
-    {
-      "row": "H",
-      "seatNumber": 3,
-      "x": 3,
       "y": 7,
       "type": "seat",
       "isActive": true,
@@ -2392,15 +2347,6 @@ export const trainCouchLayout: BusLayout = {
       "row": "I",
       "seatNumber": 2,
       "x": 1,
-      "y": 8,
-      "type": "seat",
-      "isActive": true,
-      "isAccessible": false
-    },
-    {
-      "row": "I",
-      "seatNumber": 3,
-      "x": 3,
       "y": 8,
       "type": "seat",
       "isActive": true,
@@ -2445,8 +2391,134 @@ export const trainCouchLayout: BusLayout = {
     {
       "row": "J",
       "seatNumber": 4,
-      "x": 3,
+      "x": 4,
       "y": 9,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "D",
+      "seatNumber": 3,
+      "x": 2,
+      "y": 3,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "E",
+      "seatNumber": 3,
+      "x": 2,
+      "y": 4,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "F",
+      "seatNumber": 3,
+      "x": 2,
+      "y": 5,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "A",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 0,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "A",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 0,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "B",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 1,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "B",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 1,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "C",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 2,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "D",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 3,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "E",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 4,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "F",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 5,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "G",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 6,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "H",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 7,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "I",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 8,
       "type": "seat",
       "isActive": true,
       "isAccessible": false
@@ -2454,8 +2526,377 @@ export const trainCouchLayout: BusLayout = {
     {
       "row": "J",
       "seatNumber": 5,
-      "x": 4,
+      "x": 5,
       "y": 9,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "J",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 9,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "I",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 8,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "H",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 7,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "G",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 6,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "F",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 5,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "E",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 4,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "D",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 3,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "C",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 2,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "K",
+      "seatNumber": 1,
+      "x": 0,
+      "y": 10,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "K",
+      "seatNumber": 2,
+      "x": 1,
+      "y": 10,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "K",
+      "seatNumber": 3,
+      "x": 2,
+      "y": 10,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "K",
+      "seatNumber": 4,
+      "x": 4,
+      "y": 10,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "K",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 10,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "L",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 11,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "M",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 12,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "N",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 13,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "N",
+      "seatNumber": 3,
+      "x": 2,
+      "y": 13,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "N",
+      "seatNumber": 2,
+      "x": 1,
+      "y": 13,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "N",
+      "seatNumber": 1,
+      "x": 0,
+      "y": 13,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "M",
+      "seatNumber": 1,
+      "x": 0,
+      "y": 12,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "L",
+      "seatNumber": 1,
+      "x": 0,
+      "y": 11,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "L",
+      "seatNumber": 2,
+      "x": 1,
+      "y": 11,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "L",
+      "seatNumber": 3,
+      "x": 2,
+      "y": 11,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "L",
+      "seatNumber": 4,
+      "x": 4,
+      "y": 11,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "L",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 11,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "K",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 10,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "M",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 12,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "M",
+      "seatNumber": 4,
+      "x": 4,
+      "y": 12,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "M",
+      "seatNumber": 3,
+      "x": 2,
+      "y": 12,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "M",
+      "seatNumber": 2,
+      "x": 1,
+      "y": 12,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "N",
+      "seatNumber": 4,
+      "x": 4,
+      "y": 13,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "O",
+      "seatNumber": 1,
+      "x": 0,
+      "y": 14,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "O",
+      "seatNumber": 2,
+      "x": 1,
+      "y": 14,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "O",
+      "seatNumber": 3,
+      "x": 2,
+      "y": 14,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "O",
+      "seatNumber": 4,
+      "x": 4,
+      "y": 14,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "O",
+      "seatNumber": 5,
+      "x": 5,
+      "y": 14,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "O",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 14,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "N",
+      "seatNumber": 6,
+      "x": 6,
+      "y": 13,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "G",
+      "seatNumber": 3,
+      "x": 2,
+      "y": 6,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "H",
+      "seatNumber": 3,
+      "x": 2,
+      "y": 7,
+      "type": "seat",
+      "isActive": true,
+      "isAccessible": false
+    },
+    {
+      "row": "I",
+      "seatNumber": 3,
+      "x": 2,
+      "y": 8,
       "type": "seat",
       "isActive": true,
       "isAccessible": false
