@@ -238,6 +238,20 @@ export abstract class CinemaService {
 			)
 	}
 
+	static async findScreenById(id: string) {
+		const [screen] = await db
+			.select()
+			.from(cinemaScreens)
+			.where(eq(cinemaScreens.id, id))
+			.limit(1)
+
+		if (!screen) {
+			throw status(404, { message: 'Screen not found' })
+		}
+
+		return screen
+	}
+
 	static async listAllAdminScreens(params: {
 		page?: number
 		limit?: number
@@ -282,6 +296,7 @@ export abstract class CinemaService {
 				screenType: cinemaScreens.screenType,
 				totalSeats: cinemaScreens.totalSeats,
 				isActive: cinemaScreens.isActive,
+				seatLayout: cinemaScreens.seatLayout,
 			})
 			.from(cinemaScreens)
 			.innerJoin(theatersTable, eq(cinemaScreens.theatreId, theatersTable.id))
@@ -498,6 +513,7 @@ export abstract class CinemaService {
 				screenType: data.screenType ?? undefined,
 				totalSeats: data.totalSeats ?? undefined,
 				isActive: data.isActive !== undefined ? data.isActive : undefined,
+				seatLayout: data.seatLayout !== undefined ? data.seatLayout : undefined,
 			})
 			.where(eq(cinemaScreens.id, id))
 			.returning()

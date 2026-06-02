@@ -84,6 +84,21 @@ export const cinemas = new Elysia({ prefix: '/cinema' })
 			},
 		}
 	)
+	.get(
+		'/screens/:id',
+		async ({ params: { id } }) => {
+			return await CinemaService.findScreenById(id)
+		},
+		{
+			params: t.Object({
+				id: t.String(),
+			}),
+			response: {
+				200: CinemaModel.screenResponse,
+				404: CinemaModel.errorResponse,
+			},
+		}
+	)
 	// Admin protected routes
 	.use(isAdmin)
 	.post(

@@ -29,6 +29,16 @@ export abstract class SeatService {
 		}))
 	}
 
+	static async listSeatTypes() {
+		const types = await db.select().from(seatType)
+		return types.map(t => ({
+			id: t.id,
+			name: t.name,
+			capacity: t.capacity,
+			priceMultiplier: t.priceMultiplier || '1.00',
+		}))
+	}
+
 	static async createSeatType(data: SeatModel['createSeatTypeBody']) {
 		const [newType] = await db
 			.insert(seatType)
@@ -45,6 +55,35 @@ export abstract class SeatService {
 			capacity: newType.capacity,
 			priceMultiplier: newType.priceMultiplier || '1.00',
 		}
+	}
+
+	static async updateSeatType(id: string, data: SeatModel['updateSeatTypeBody']) {
+		const [existing] = await db.select().from(seatType).where(eq(seatType.id, id)).limit(1)
+		if (!existing) throw status(404, { message: 'Seat type not found' })
+
+		const [updated] = await db
+			.update(seatType)
+			.set({
+				name: data.name ?? undefined,
+				capacity: data.capacity ?? undefined,
+				priceMultiplier: data.priceMultiplier ?? undefined,
+			})
+			.where(eq(seatType.id, id))
+			.returning()
+
+		return {
+			id: updated.id,
+			name: updated.name,
+			capacity: updated.capacity,
+			priceMultiplier: updated.priceMultiplier || '1.00',
+		}
+	}
+
+	static async deleteSeatType(id: string) {
+		const [existing] = await db.select().from(seatType).where(eq(seatType.id, id)).limit(1)
+		if (!existing) throw status(404, { message: 'Seat type not found' })
+		await db.delete(seatType).where(eq(seatType.id, id))
+		return { message: 'Seat type deleted successfully' }
 	}
 
 	static async createSeats(data: SeatModel['createSeatsBody']) {

@@ -46,6 +46,14 @@ export const SeatModel = {
 		capacity: t.Optional(t.Number()),
 		priceMultiplier: t.Optional(t.String()),
 	}),
+	updateSeatTypeBody: t.Object({
+		name: t.Optional(t.String()),
+		capacity: t.Optional(t.Number()),
+		priceMultiplier: t.Optional(t.String()),
+	}),
+	deleteResponse: t.Object({
+		message: t.String(),
+	}),
 	createSeatsBody: t.Array(
 		t.Object({
 			screenId: t.String(),

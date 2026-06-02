@@ -106,6 +106,7 @@ const eventTypes: NavItem[] = [
           { title: "Theater List", url: "/admin/movies/theaters" },
           { title: "Add Theater", url: "/admin/movies/theaters/add" },
           { title: "Theater Halls", url: "/admin/movies/theaters/halls" },
+          { title: "Seat Types", url: "/admin/movies/theaters/seat-types" },
           { title: "Theater Seat Map", url: "/admin/movies/theaters/seat-map" },
           { title: "Theater Locations", url: "/admin/movies/theaters/locations" },
         ],

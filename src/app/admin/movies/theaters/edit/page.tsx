@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -36,6 +36,32 @@ import "maplibre-gl/dist/maplibre-gl.css";
 interface CineplexChain {
   id: string;
   name: string;
+}
+
+interface CinemaTheater {
+  id: string;
+  cineplexChainId: string | null;
+  name: string;
+  slug: string;
+  description: string | null;
+  address: string | null;
+  city: string;
+  state: string;
+  country: string;
+  pincode: string | null;
+  latitude: string | null;
+  longitude: string | null;
+  facilities: string[] | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  logoUrl: string | null;
+  contactNumber: string | null;
+  totalScreens: number;
+  parkingAvailable: boolean | null;
+  wheelchairAccessible: boolean | null;
+  foodAllowed: boolean | null;
+  isActive: boolean;
 }
 
 interface TheaterFormInput {
@@ -379,10 +405,14 @@ function MapLibrePicker({
   );
 }
 
-export default function AddTheaterPage() {
+function EditTheaterContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const editId = searchParams.get("id");
+
   const [chains, setChains] = useState<CineplexChain[]>([]);
   const [loadingChains, setLoadingChains] = useState(true);
+  const [loadingTheater, setLoadingTheater] = useState(true);
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -450,29 +480,60 @@ export default function AddTheaterPage() {
   const watchName = watch("name");
   const watchFormValues = watch();
 
-  // Fetch Cineplex brands
+  // Load Chains and Theater Data
   useEffect(() => {
-    fetch("/api/cinema/chains?limit=1000")
-      .then((r) => r.json())
-      .then((data) => {
-        setChains(data.items || []);
-        setLoadingChains(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        toast.error("Failed to load Cineplex chains");
-        setLoadingChains(false);
-      });
-  }, []);
-
-  // Sync state/division with city selection automatically
-  useEffect(() => {
-    if (watchCity) {
-      setValue("state", watchCity + " Division");
+    if (!editId) {
+      toast.error("No Theater ID specified for editing.");
+      router.push("/admin/movies/theaters");
+      return;
     }
-  }, [watchCity, setValue]);
 
-  // Generate URL Slug from Name on input change
+    const loadData = async () => {
+      try {
+        const chainsRes = await fetch("/api/cinema/chains?limit=1000").then((r) => r.json());
+        setChains(chainsRes.items || []);
+        setLoadingChains(false);
+
+        // Fetch location listing to find matching editing branch
+        const theatersRes = await fetch("/api/cinema/admin-theaters?limit=1000").then((r) => r.json());
+        const theater = (theatersRes.items || []).find((t: CinemaTheater) => t.id === editId);
+
+        if (theater) {
+          setValue("cineplexChainId", theater.cineplexChainId || "");
+          setValue("name", theater.name);
+          setValue("slug", theater.slug);
+          setValue("description", theater.description || "");
+          setValue("address", theater.address || "");
+          setValue("city", theater.city);
+          setValue("state", theater.state || (theater.city + " Division"));
+          setValue("country", theater.country || "Bangladesh");
+          setValue("pincode", theater.pincode || "");
+          setValue("latitude", theater.latitude || "");
+          setValue("longitude", theater.longitude || "");
+          setValue("phone", theater.phone || "");
+          setValue("email", theater.email || "");
+          setValue("website", theater.website || "");
+          setValue("logoUrl", theater.logoUrl || "");
+          setValue("contactNumber", theater.contactNumber || "");
+          setValue("parkingAvailable", !!theater.parkingAvailable);
+          setValue("wheelchairAccessible", !!theater.wheelchairAccessible);
+          setValue("foodAllowed", !!theater.foodAllowed);
+          setValue("facilities", theater.facilities || []);
+        } else {
+          toast.error("Cinema Branch Location details not found in database.");
+          router.push("/admin/movies/theaters");
+        }
+        setLoadingTheater(false);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load details for editing branch");
+        setLoadingTheater(false);
+      }
+    };
+
+    loadData();
+  }, [editId, setValue, router]);
+
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setValue("name", val);
@@ -516,26 +577,26 @@ export default function AddTheaterPage() {
   const onFormSubmit = async (data: TheaterFormInput) => {
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/cinema", {
-        method: "POST",
+      const res = await fetch(`/api/cinema/${editId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          cineplexChainId: data.cineplexChainId || undefined,
+          cineplexChainId: data.cineplexChainId || null,
           name: data.name,
           slug: data.slug,
-          description: data.description || undefined,
-          address: data.address || undefined,
+          description: data.description || null,
+          address: data.address || null,
           city: data.city,
           state: data.state,
           country: data.country,
-          pincode: data.pincode || undefined,
-          latitude: data.latitude || undefined,
-          longitude: data.longitude || undefined,
-          phone: data.phone || undefined,
-          email: data.email || undefined,
-          website: data.website || undefined,
-          logoUrl: data.logoUrl || undefined,
-          contactNumber: data.contactNumber || undefined,
+          pincode: data.pincode || null,
+          latitude: data.latitude || null,
+          longitude: data.longitude || null,
+          phone: data.phone || null,
+          email: data.email || null,
+          website: data.website || null,
+          logoUrl: data.logoUrl || null,
+          contactNumber: data.contactNumber || null,
           parkingAvailable: data.parkingAvailable,
           wheelchairAccessible: data.wheelchairAccessible,
           foodAllowed: data.foodAllowed,
@@ -545,13 +606,13 @@ export default function AddTheaterPage() {
 
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.message || "Failed to create cinema branch");
+        throw new Error(err.message || "Failed to update cinema branch");
       }
 
-      toast.success("Multiplex branch location configured successfully!");
+      toast.success("Multiplex branch details updated successfully!");
       router.push("/admin/movies/theaters");
     } catch (error: any) {
-      toast.error(error.message || "Failed to create branch");
+      toast.error(error.message || "Failed to save details");
     } finally {
       setIsSubmitting(false);
     }
@@ -563,6 +624,15 @@ export default function AddTheaterPage() {
     { num: 3, title: "Amenities & Contacts", desc: "Phone, Web & Tech", icon: Activity },
     { num: 4, title: "Confirmation", desc: "Review Parameters", icon: CheckCircle2 },
   ];
+
+  if (loadingChains || loadingTheater) {
+    return (
+      <div className="flex flex-col items-center justify-center py-40 gap-4 min-h-[50vh]">
+        <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
+        <span className="text-muted-foreground font-semibold text-sm animate-pulse">Loading location configuration...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen w-full bg-background overflow-hidden relative">
@@ -587,10 +657,10 @@ export default function AddTheaterPage() {
             </Button>
             <div>
               <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-                Add Multiplex Branch
+                Edit Multiplex Branch
               </h1>
               <p className="text-muted-foreground mt-0.5 text-xs">
-                Configure details, coordinates, facilities, and contact parameters.
+                Modify details, coordinates, facilities, and contact parameters.
               </p>
             </div>
           </div>
@@ -743,7 +813,12 @@ export default function AddTheaterPage() {
                   <div className="grid gap-2">
                     <Label className="text-xs font-bold text-foreground">City</Label>
                     <select
-                      {...register("city", { required: "City is required" })}
+                      {...register("city", {
+                        required: "City is required",
+                        onChange: (e) => {
+                          setValue("state", e.target.value + " Division");
+                        }
+                      })}
                       className="flex h-9 w-full rounded-lg border border-input bg-background px-3 py-1 text-xs shadow-xs transition-colors focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-ring"
                     >
                       {cities.map((city) => (
@@ -950,7 +1025,7 @@ export default function AddTheaterPage() {
                 <div className="p-3 bg-indigo-500/10 border border-indigo-500/20 rounded-xl flex items-center gap-3">
                   <CheckCircle2 className="h-5 w-5 text-indigo-400 shrink-0" />
                   <div>
-                    <h4 className="text-xs font-semibold text-indigo-400 font-bold">Ready to configure location</h4>
+                    <h4 className="text-xs font-semibold text-indigo-400 font-bold">Ready to commit updates</h4>
                     <p className="text-[10px] text-muted-foreground mt-0.5">
                       Review Coordinates, Brand layout, and technical systems checklists below.
                     </p>
@@ -1079,11 +1154,11 @@ export default function AddTheaterPage() {
                     {isSubmitting ? (
                       <>
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                        Saving Location...
+                        Saving Updates...
                       </>
                     ) : (
                       <>
-                        <Check className="h-4.5 w-4.5" /> Save Location
+                        <Check className="h-4.5 w-4.5" /> Save Changes
                       </>
                     )}
                   </Button>
@@ -1111,5 +1186,18 @@ export default function AddTheaterPage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function EditTheaterPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col items-center justify-center py-40 gap-4 min-h-[50vh]">
+        <Loader2 className="h-12 w-12 text-indigo-600 animate-spin" />
+        <span className="text-muted-foreground font-semibold text-sm animate-pulse">Loading location editor...</span>
+      </div>
+    }>
+      <EditTheaterContent />
+    </Suspense>
   );
 }

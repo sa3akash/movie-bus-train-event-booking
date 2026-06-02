@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -17,19 +17,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Building2,
   Plus,
@@ -50,6 +41,7 @@ import {
   ChevronsRight,
   CheckCircle2,
   XCircle,
+  Compass,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -85,6 +77,8 @@ interface CinemaTheater {
   isActive: boolean;
 }
 
+
+
 export default function TheatersPage() {
   const router = useRouter();
   const [chains, setChains] = useState<CineplexChain[]>([]);
@@ -118,33 +112,6 @@ export default function TheatersPage() {
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
-
-  // Dialogue Open States
-  const [isEditTheaterDialogOpen, setIsEditTheaterDialogOpen] = useState(false);
-
-  // Current item being edited
-  const [editingTheater, setEditingTheater] = useState<CinemaTheater | null>(null);
-
-  // Form States (Edit)
-  const [editTheaterName, setEditTheaterName] = useState("");
-  const [editTheaterChainId, setEditTheaterChainId] = useState("");
-  const [editTheaterAddress, setEditTheaterAddress] = useState("");
-  const [editTheaterCity, setEditTheaterCity] = useState("Dhaka");
-  const [editTheaterState, setEditTheaterState] = useState("Dhaka Division");
-  const [editTheaterCountry, setEditTheaterCountry] = useState("Bangladesh");
-  const [editTheaterPincode, setEditTheaterPincode] = useState("");
-  const [editTheaterLatitude, setEditTheaterLatitude] = useState("");
-  const [editTheaterLongitude, setEditTheaterLongitude] = useState("");
-  const [editTheaterPhone, setEditTheaterPhone] = useState("");
-  const [editTheaterEmail, setEditTheaterEmail] = useState("");
-  const [editTheaterWebsite, setEditTheaterWebsite] = useState("");
-  const [editTheaterLogoUrl, setEditTheaterLogoUrl] = useState("");
-  const [editTheaterContactNumber, setEditTheaterContactNumber] = useState("");
-  const [editTheaterParking, setEditTheaterParking] = useState(false);
-  const [editTheaterWheelchair, setEditTheaterWheelchair] = useState(false);
-  const [editTheaterFood, setEditTheaterFood] = useState(true);
-  const [editTheaterFacilities, setEditTheaterFacilities] = useState<string[]>([]);
-  const [editTheaterActive, setEditTheaterActive] = useState(true);
 
   const availableFacilities = ["3D Projections", "Dolby Atmos", "Recliner Seats", "VIP Lounge", "Food Court", "Arcade Zone"];
   const cities = ["Dhaka", "Chittagong", "Sylhet", "Rajshahi", "Khulna"];
@@ -184,87 +151,7 @@ export default function TheatersPage() {
     fetchData();
   }, [page, limit, searchTerm, selectedChainId, selectedCity, statusFilter]);
 
-  const startEditTheater = (theater: CinemaTheater) => {
-    setEditingTheater(theater);
-    setEditTheaterName(theater.name);
-    setEditTheaterChainId(theater.cineplexChainId || "");
-    setEditTheaterAddress(theater.address || "");
-    setEditTheaterCity(theater.city);
-    setEditTheaterState(theater.state || (theater.city + " Division"));
-    setEditTheaterCountry(theater.country || "Bangladesh");
-    setEditTheaterPincode(theater.pincode || "");
-    setEditTheaterLatitude(theater.latitude || "");
-    setEditTheaterLongitude(theater.longitude || "");
-    setEditTheaterPhone(theater.phone || "");
-    setEditTheaterEmail(theater.email || "");
-    setEditTheaterWebsite(theater.website || "");
-    setEditTheaterLogoUrl(theater.logoUrl || "");
-    setEditTheaterContactNumber(theater.contactNumber || "");
-    setEditTheaterParking(!!theater.parkingAvailable);
-    setEditTheaterWheelchair(!!theater.wheelchairAccessible);
-    setEditTheaterFood(!!theater.foodAllowed);
-    setEditTheaterFacilities(theater.facilities || []);
-    setEditTheaterActive(theater.isActive);
-    setIsEditTheaterDialogOpen(true);
-  };
 
-  const handleFacilityToggle = (facility: string) => {
-    setEditTheaterFacilities((prev) =>
-      prev.includes(facility)
-        ? prev.filter((f) => f !== facility)
-        : [...prev, facility]
-    );
-  };
-
-  const handleEditTheater = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingTheater || !editTheaterName.trim()) return;
-
-    const slug = editTheaterName
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "");
-
-    try {
-      const res = await fetch(`/api/cinema/${editingTheater.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cineplexChainId: editTheaterChainId || null,
-          name: editTheaterName,
-          slug,
-          address: editTheaterAddress || null,
-          city: editTheaterCity,
-          state: editTheaterState,
-          country: editTheaterCountry,
-          pincode: editTheaterPincode || null,
-          latitude: editTheaterLatitude || null,
-          longitude: editTheaterLongitude || null,
-          phone: editTheaterPhone || null,
-          email: editTheaterEmail || null,
-          website: editTheaterWebsite || null,
-          logoUrl: editTheaterLogoUrl || null,
-          contactNumber: editTheaterContactNumber || null,
-          parkingAvailable: editTheaterParking,
-          wheelchairAccessible: editTheaterWheelchair,
-          foodAllowed: editTheaterFood,
-          facilities: editTheaterFacilities,
-          isActive: editTheaterActive,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to update branch");
-      }
-
-      toast.success("Cinema branch updated successfully");
-      setIsEditTheaterDialogOpen(false);
-      fetchData();
-    } catch (error: any) {
-      toast.error(error.message || "Failed to update branch");
-    }
-  };
 
   const handleDeleteTheater = async (id: string) => {
     if (!confirm("Are you sure you want to delete this Cinema Branch?")) return;
@@ -608,7 +495,7 @@ export default function TheatersPage() {
                           )}
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
-                              <Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" onClick={() => startEditTheater(theater)}>
+                              <Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" onClick={() => router.push(`/admin/movies/theaters/edit?id=${theater.id}`)}>
                                 <Edit className="h-3.5 w-3.5" />
                               </Button>
                               <Button variant="ghost" className="h-8 w-8 p-0 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleDeleteTheater(theater.id)}>
@@ -702,239 +589,7 @@ export default function TheatersPage() {
         </Card>
       )}
 
-      {/* Edit Theater Dialog / Side Panel Sheet */}
-      <Dialog open={isEditTheaterDialogOpen} onOpenChange={setIsEditTheaterDialogOpen}>
-        <DialogContent className="fixed right-0 top-0 h-full w-full max-w-lg bg-background border-l shadow-2xl p-6 overflow-y-auto max-h-[100vh] z-50 rounded-none transition-transform duration-300">
-          <form onSubmit={handleEditTheater} className="space-y-6">
-            <DialogHeader className="pb-4 border-b">
-              <DialogTitle className="text-xl font-bold bg-linear-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-                Edit Cinema Branch
-              </DialogTitle>
-              <DialogDescription>
-                Modify details, coordinate locations, configurations, and amenities checklist.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4 py-2 text-sm">
-              {/* Brand & Name */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>Parent Chain Brand</Label>
-                  <select
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:ring-1 focus:ring-ring"
-                    value={editTheaterChainId}
-                    onChange={(e) => setEditTheaterChainId(e.target.value)}
-                  >
-                    <option value="">Independent (No Chain)</option>
-                    {chains.map((c) => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-theater-name">Branch / Theater Name</Label>
-                  <Input
-                    id="edit-theater-name"
-                    value={editTheaterName}
-                    onChange={(e) => setEditTheaterName(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
 
-              {/* Direct hotline */}
-              <div className="grid gap-2">
-                <Label htmlFor="edit-theater-contact-num">Direct Hotline / Manager Phone</Label>
-                <Input
-                  id="edit-theater-contact-num"
-                  value={editTheaterContactNumber}
-                  onChange={(e) => setEditTheaterContactNumber(e.target.value)}
-                  placeholder="e.g. 018xxxx"
-                />
-              </div>
-
-              {/* Address */}
-              <div className="grid gap-2">
-                <Label htmlFor="edit-theater-address">Address</Label>
-                <Input
-                  id="edit-theater-address"
-                  value={editTheaterAddress}
-                  onChange={(e) => setEditTheaterAddress(e.target.value)}
-                  required
-                />
-              </div>
-
-              {/* City/State/Country/Zip */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>City</Label>
-                  <select
-                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm focus:ring-1 focus:ring-ring"
-                    value={editTheaterCity}
-                    onChange={(e) => {
-                      setEditTheaterCity(e.target.value);
-                      setEditTheaterState(e.target.value + " Division");
-                    }}
-                  >
-                    {cities.map((city) => (
-                      <option key={city} value={city}>{city}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-theater-state">State / Division</Label>
-                  <Input
-                    id="edit-theater-state"
-                    value={editTheaterState}
-                    onChange={(e) => setEditTheaterState(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-theater-country">Country</Label>
-                  <Input
-                    id="edit-theater-country"
-                    value={editTheaterCountry}
-                    onChange={(e) => setEditTheaterCountry(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-theater-zip">ZIP / Pincode</Label>
-                  <Input
-                    id="edit-theater-zip"
-                    value={editTheaterPincode}
-                    onChange={(e) => setEditTheaterPincode(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Lat/Lng/Logo */}
-              <div className="grid grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-theater-lat">Latitude</Label>
-                  <Input
-                    id="edit-theater-lat"
-                    value={editTheaterLatitude}
-                    onChange={(e) => setEditTheaterLatitude(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-theater-lng">Longitude</Label>
-                  <Input
-                    id="edit-theater-lng"
-                    value={editTheaterLongitude}
-                    onChange={(e) => setEditTheaterLongitude(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-theater-logo">Logo image URL</Label>
-                  <Input
-                    id="edit-theater-logo"
-                    value={editTheaterLogoUrl}
-                    onChange={(e) => setEditTheaterLogoUrl(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Contacts */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-theater-phone">Office Phone</Label>
-                  <Input
-                    id="edit-theater-phone"
-                    value={editTheaterPhone}
-                    onChange={(e) => setEditTheaterPhone(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-theater-email">Office Email</Label>
-                  <Input
-                    id="edit-theater-email"
-                    type="email"
-                    value={editTheaterEmail}
-                    onChange={(e) => setEditTheaterEmail(e.target.value)}
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="edit-theater-website">Office Website</Label>
-                  <Input
-                    id="edit-theater-website"
-                    value={editTheaterWebsite}
-                    onChange={(e) => setEditTheaterWebsite(e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Checkboxes */}
-              <div className="pt-3 border-t border-muted">
-                <Label className="text-xs font-semibold text-muted-foreground block mb-2">Amenities</Label>
-                <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs">
-                    <input
-                      type="checkbox"
-                      checked={editTheaterParking}
-                      onChange={(e) => setEditTheaterParking(e.target.checked)}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                    />
-                    <span>Parking Area</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-xs">
-                    <input
-                      type="checkbox"
-                      checked={editTheaterWheelchair}
-                      onChange={(e) => setEditTheaterWheelchair(e.target.checked)}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                    />
-                    <span>Wheelchair Access</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-xs">
-                    <input
-                      type="checkbox"
-                      checked={editTheaterFood}
-                      onChange={(e) => setEditTheaterFood(e.target.checked)}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                    />
-                    <span>Outside Food Allowed</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer text-xs">
-                    <input
-                      type="checkbox"
-                      checked={editTheaterActive}
-                      onChange={(e) => setEditTheaterActive(e.target.checked)}
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                    />
-                    <span className="font-semibold text-indigo-600">Active / Open Branch</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Facilities */}
-              <div className="pt-3 border-t border-muted">
-                <Label className="text-xs font-semibold text-muted-foreground block mb-2">Theater features</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {availableFacilities.map((fac) => (
-                    <label key={fac} className="flex items-center gap-2 cursor-pointer text-xs p-2 border rounded-md hover:bg-muted/40 transition-colors">
-                      <input
-                        type="checkbox"
-                        checked={editTheaterFacilities.includes(fac)}
-                        onChange={() => handleFacilityToggle(fac)}
-                        className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 h-4 w-4"
-                      />
-                      <span>{fac}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <DialogFooter className="pt-4 border-t flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setIsEditTheaterDialogOpen(false)}>Cancel</Button>
-              <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white">Save Changes</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

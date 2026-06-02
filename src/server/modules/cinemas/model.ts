@@ -97,6 +97,16 @@ export const CinemaModel = {
 		screenType: t.String(),
 		totalSeats: t.Number(),
 		isActive: t.Boolean(),
+		seatLayout: t.Optional(t.Nullable(t.Object({
+			rows: t.Number(),
+			columns: t.Number(),
+			seats: t.Array(t.Object({
+				row: t.String(),
+				seatNumber: t.Number(),
+				x: t.Number(),
+				y: t.Number(),
+			}))
+		}))),
 	}),
 	listScreensResponse: t.Array(
 		t.Object({
@@ -114,6 +124,16 @@ export const CinemaModel = {
 			screenType: t.String(),
 			totalSeats: t.Number(),
 			isActive: t.Boolean(),
+			seatLayout: t.Optional(t.Nullable(t.Object({
+				rows: t.Number(),
+				columns: t.Number(),
+				seats: t.Array(t.Object({
+					row: t.String(),
+					seatNumber: t.Number(),
+					x: t.Number(),
+					y: t.Number(),
+				}))
+			}))),
 		})
 	),
 	createChainBody: t.Object({
@@ -205,6 +225,16 @@ export const CinemaModel = {
 		])),
 		totalSeats: t.Optional(t.Number()),
 		isActive: t.Optional(t.Boolean()),
+		seatLayout: t.Optional(t.Object({
+			rows: t.Number(),
+			columns: t.Number(),
+			seats: t.Array(t.Object({
+				row: t.String(),
+				seatNumber: t.Number(),
+				x: t.Number(),
+				y: t.Number(),
+			}))
+		})),
 	}),
 	paginatedChainsResponse: t.Object({
 		items: t.Array(
@@ -268,6 +298,16 @@ export const CinemaModel = {
 				screenType: t.String(),
 				totalSeats: t.Number(),
 				isActive: t.Boolean(),
+				seatLayout: t.Optional(t.Nullable(t.Object({
+					rows: t.Number(),
+					columns: t.Number(),
+					seats: t.Array(t.Object({
+						row: t.String(),
+						seatNumber: t.Number(),
+						x: t.Number(),
+						y: t.Number(),
+					}))
+				}))),
 			})
 		),
 		total: t.Number(),
