@@ -30,15 +30,15 @@ export const CoachInfoBar = ({
       </p>
     </div>
 
-    {/* Coach switcher pills */}
-    <div className="flex gap-2 flex-wrap">
+    {/* Coach switcher pills — horizontal scroll strip */}
+    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 max-w-full md:max-w-lg xl:max-w-none flex-nowrap">
       {COACHES.map(c => {
         const sel = seatSelections[c.id]?.size ?? 0;
         return (
           <button
             key={c.id}
             onClick={() => onSelectCoach(c.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all shrink-0
               ${c.id === activeCoachId
                 ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
                 : 'bg-white/10 text-white/70 hover:bg-white/20 backdrop-blur-md'
