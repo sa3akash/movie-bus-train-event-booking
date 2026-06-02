@@ -1,10 +1,11 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { seatsLayout, SeatsLayout } from "@/lib/data";
+import { seatsLayout } from "@/lib/data";
 import React, { useState } from "react";
 
 interface SeatPickerProps {
-  layoutData: SeatsLayout;
+  layoutData: any;
   bookedSeats?: string[]; // e.g., ["A-1", "A-2"]
 }
 

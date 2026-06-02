@@ -1,4 +1,10 @@
-import AdminDashboard from "../../../public/admin/page";
+import React from 'react'
 
-export default AdminDashboard;
+const page = () => {
+  return (
+    <div>page</div>
+  )
+}
+
+export default page
 

@@ -14,6 +14,8 @@ export interface SeatType {
   priceMultiplier: string;
 }
 
+export type LayoutMode = "standard" | "center_aisle" | "double_aisle";
+
 export interface ScreenInfo {
   id: string;
   name: string;
@@ -76,24 +78,41 @@ export function buildGrid(
   rows: number,
   cols: number,
   defaultTypeId: string | null,
+  layoutMode: LayoutMode = "standard"
 ): SeatCell[][] {
   return Array.from({ length: rows }, (_, ri) =>
-    Array.from({ length: cols }, (_, ci) => ({
-      row: rowLabel(ri),
-      col: ci + 1,
-      seatTypeId: defaultTypeId,
-      label: String(ci + 1),
-      isAccessible: false,
-    })),
+    Array.from({ length: cols }, (_, ci) => {
+      let isAisle = false;
+      if (layoutMode === "center_aisle") {
+        // 2 aisle columns in the center
+        const mid = Math.floor(cols / 2);
+        if (ci === mid || ci === mid - 1) isAisle = true;
+      } else if (layoutMode === "double_aisle") {
+        // aisles at 1/3 and 2/3 marks (2 cols each)
+        const third = Math.floor(cols / 3);
+        const twoThird = Math.floor((cols * 2) / 3);
+        if (ci === third || ci === third - 1 || ci === twoThird || ci === twoThird - 1) isAisle = true;
+      }
+
+      return {
+        row: rowLabel(ri),
+        col: ci + 1,
+        seatTypeId: isAisle ? null : defaultTypeId,
+        label: isAisle ? "" : String(ci + 1),
+        isAccessible: false,
+      };
+    })
   );
 }
 
 export function renumberGrid(grid: SeatCell[][]): SeatCell[][] {
-  return grid.map((row) => {
-    let num = 1;
-    return row.map((cell) => {
-      if (cell.seatTypeId === null) return { ...cell, label: "" };
-      return { ...cell, label: String(num++) };
-    });
+  return grid.map(renumberRow);
+}
+
+export function renumberRow(row: SeatCell[]): SeatCell[] {
+  let num = 1;
+  return row.map((cell) => {
+    if (cell.seatTypeId === null) return { ...cell, label: "" };
+    return { ...cell, label: String(num++) };
   });
 }
