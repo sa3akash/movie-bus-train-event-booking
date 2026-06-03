@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { VideoInfo } from "@/components/video/VideoInfo";
 import { VideoActions } from "@/components/video/VideoActions";
+import { useShakaOffline } from "@/context/ShakaOfflineContext";
 
 // Dynamically import the ShakaPlayer with NO SSR because it relies on window/navigator.
 const ShakaPlayer = dynamic(() => import("@/components/video/ShakaPlayer"), {
@@ -37,18 +38,50 @@ const VideoPlayerPage = () => {
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [offlineUri, setOfflineUri] = useState<string | null>(null);
 
+  const { downloads } = useShakaOffline();
+
   useEffect(() => {
     if (!params.id) return;
-
+    
     fetch(`/api/video/${params.id}`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Network offline");
+        return res.json();
+      })
       .then((data) => {
-        if (data) {
-          setVideo(data);
+        if (data && data.video) {
+          setVideo(data.video);
+        } else if (data && data.id) {
+          setVideo(data as any);
         }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Network fetch failed.", err);
         setLoading(false);
       });
   }, [params.id]);
+
+  // Handle offline fallback when downloads are available
+  useEffect(() => {
+    if (!loading && !video && params.id) {
+      const found = downloads.find((item) => item.appMetadata?.videoId === params.id);
+      if (found) {
+        console.log("Found video in offline storage context!");
+        setVideo({
+          id: params.id as string,
+          status: "COMPLETED",
+          dashUrl: null,
+          hlsUrl: null,
+          duration: "0",
+          createdAt: new Date().toISOString(),
+          resolutions: ["OFFLINE"],
+        });
+        setIsDownloaded(true);
+        setOfflineUri(found.offlineUri);
+      }
+    }
+  }, [loading, video, params.id, downloads]);
 
   if (loading) {
     return (
@@ -59,18 +92,39 @@ const VideoPlayerPage = () => {
   }
 
   if (!video || video.status !== "COMPLETED") {
+    // If we're offline and the video wasn't found in offline storage
+    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
-        <h2 className="text-2xl font-bold mb-2">Video Unavailable</h2>
-        <p className="text-muted-foreground mb-6">
-          This video may not exist or is still processing.
+        <div className="bg-muted p-6 rounded-full mb-4">
+          <Loader2 className="h-12 w-12 text-muted-foreground" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">
+          {isOffline ? "You are offline" : "Video Unavailable"}
+        </h2>
+        <p className="text-muted-foreground mb-8 max-w-sm">
+          {isOffline 
+            ? "This video is not saved to your device for offline viewing."
+            : "This video may not exist or is still processing."}
         </p>
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 text-primary hover:underline"
-        >
-          <ArrowLeft className="h-4 w-4" /> Go back
-        </button>
+        
+        <div className="flex gap-4">
+          <button
+            onClick={() => router.back()}
+            className="px-6 py-2 bg-muted hover:bg-muted/80 rounded-full font-medium transition-colors"
+          >
+            Go back
+          </button>
+          {isOffline && (
+            <button
+              onClick={() => router.push("/downloads")}
+              className="px-6 py-2 bg-primary text-primary-foreground font-semibold rounded-full hover:bg-primary/90 transition-colors"
+            >
+              Go to Downloads
+            </button>
+          )}
+        </div>
       </div>
     );
   }

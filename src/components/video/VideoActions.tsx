@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Share2, ThumbsUp, Download, CheckCircle2, Loader2 } from "lucide-react";
+import { useShakaOffline } from "@/context/ShakaOfflineContext";
 
 interface VideoData {
   id: string;
@@ -24,71 +25,36 @@ export const VideoActions: React.FC<VideoActionsProps> = ({
   setIsDownloaded, 
   setOfflineUri 
 }) => {
-  const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const { downloads, downloadContent, downloadProgress, isSupported } = useShakaOffline();
 
-  // Check offline storage when player is ready
+  // Check offline storage synchronously from the context state
   useEffect(() => {
-    if (!playerInstance || !video) return;
-
-    const checkOfflineStatus = async () => {
-      try {
-        const shaka = require("shaka-player/dist/shaka-player.ui.js");
-        
-        const storage = new shaka.offline.Storage(playerInstance);
-        const list = await storage.list();
-        
-        const found = list.find((item: any) => item.appMetadata?.videoId === video.id);
-        if (found) {
-          setIsDownloaded(true);
-          setOfflineUri(found.offlineUri);
-        }
-        storage.destroy();
-      } catch (err) {
-        console.error("Failed to check offline status", err);
-      }
-    };
-
-    checkOfflineStatus();
-  }, [playerInstance, video, setIsDownloaded, setOfflineUri]);
+    const found = downloads.find((item) => item.appMetadata?.videoId === video.id);
+    if (found) {
+      setIsDownloaded(true);
+      setOfflineUri(found.offlineUri);
+    } else {
+      setIsDownloaded(false);
+      setOfflineUri(null);
+    }
+  }, [downloads, video.id, setIsDownloaded, setOfflineUri]);
 
   const handleDownload = async () => {
-    if (!playerInstance || !video) return;
+    const manifestUrl = video.dashUrl || video.hlsUrl;
+    if (!manifestUrl) return;
     
     try {
-      const shaka = require("shaka-player/dist/shaka-player.ui.js");
-
-      const storage = new shaka.offline.Storage(playerInstance);
-      
-      storage.configure({
-        offline: {
-          progressCallback: (content: any, progress: number) => {
-            console.log("Download Progress:", progress);
-            setDownloadProgress(Math.round(progress * 100));
-          },
-        },
-      });
-
-      const manifestUrl = video.dashUrl || video.hlsUrl;
-      if (!manifestUrl) throw new Error("No manifest URL found");
-
-      console.log("Starting download for manifest:", manifestUrl);
-      setDownloadProgress(0);
-      
-      // Store the stream securely in IndexedDB!
-      const content = await storage.store(manifestUrl, { videoId: video.id });
-      
-      console.log("Download complete! Offline URI:", content.offlineUri);
-      setIsDownloaded(true);
-      setOfflineUri(content.offlineUri);
-      setDownloadProgress(null);
-      storage.destroy();
+      await downloadContent(manifestUrl, video.id);
       alert("Successfully stored in browser offline cache!");
     } catch (err: any) {
       console.error("Download failed", err);
-      setDownloadProgress(null);
       alert("Failed to download video: " + (err.message || "Unknown error"));
     }
   };
+
+  const progressValue = downloadProgress[video.id] !== undefined
+    ? Math.round(downloadProgress[video.id] * 100)
+    : null;
 
   return (
     <div className="flex gap-3 shrink-0 flex-wrap">
@@ -110,18 +76,18 @@ export const VideoActions: React.FC<VideoActionsProps> = ({
       ) : (
         <button 
           onClick={handleDownload}
-          disabled={downloadProgress !== null}
+          disabled={progressValue !== null || !isSupported}
           className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-full font-medium transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
         >
-          {downloadProgress !== null ? (
+          {progressValue !== null ? (
             <>
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span>{downloadProgress}%</span>
+              <span>{progressValue}%</span>
             </>
           ) : (
             <>
               <Download className="h-5 w-5" />
-              <span>Download</span>
+              <span>{isSupported ? "Download" : "Not Supported"}</span>
             </>
           )}
         </button>

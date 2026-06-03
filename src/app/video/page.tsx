@@ -16,14 +16,23 @@ interface Video {
 const VideoPage = () => {
   const [videos, setVideos] = useState<Video[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOfflineError, setIsOfflineError] = useState(false);
 
   useEffect(() => {
     fetch("/api/video")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Network response was not ok");
+        return res.json();
+      })
       .then((data) => {
         if (data.success) {
           setVideos(data.videos);
         }
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch videos. You might be offline.", err);
+        setIsOfflineError(true);
         setLoading(false);
       });
   }, []);
@@ -42,12 +51,31 @@ const VideoPage = () => {
   return (
     <div className="min-h-screen bg-background p-6 md:p-10">
       <div className="mx-auto max-w-7xl">
-        <h1 className="mb-8 text-3xl font-bold tracking-tight flex items-center gap-3">
-          <Clapperboard className="text-primary h-8 w-8" />
-          My Video Library
-        </h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <Clapperboard className="text-primary h-8 w-8" />
+            My Video Library
+          </h1>
+          <Link href="/downloads" className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-full text-sm font-medium transition-colors flex items-center gap-2 border border-border/50">
+            <Activity className="h-4 w-4" />
+            Downloads
+          </Link>
+        </div>
 
-        {videos.length === 0 ? (
+        {isOfflineError ? (
+          <div className="flex flex-col items-center justify-center py-32 text-center">
+            <div className="bg-red-500/10 p-6 rounded-full mb-4">
+              <Activity className="h-12 w-12 text-red-500" />
+            </div>
+            <h2 className="text-xl font-semibold mb-2">You are offline</h2>
+            <p className="text-muted-foreground max-w-sm mb-6">
+              Connect to the internet to browse new videos.
+            </p>
+            <Link href="/downloads" className="px-6 py-3 bg-primary text-primary-foreground font-semibold rounded-full hover:bg-primary/90 transition-colors">
+              Go to My Downloads
+            </Link>
+          </div>
+        ) : videos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-32 text-center">
             <div className="bg-muted/50 p-6 rounded-full mb-4">
               <Clapperboard className="h-12 w-12 text-muted-foreground" />

@@ -6,6 +6,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/contexts/theme-provider";
 import { UploadProvider } from "@/providers/UploadProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
+import { ShakaOfflineProvider } from "@/context/ShakaOfflineContext";
+
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 const geistSans = Geist({
@@ -50,8 +53,11 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <UploadProvider>
-              {children}
+              <ShakaOfflineProvider>
+                {children}
+              </ShakaOfflineProvider>
               <Toaster />
+              <ServiceWorkerRegister />
             </UploadProvider>
           </ThemeProvider>
         </TooltipProvider>
