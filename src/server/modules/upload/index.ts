@@ -17,8 +17,10 @@ import sharp from "sharp";
 import { encode, decode } from "blurhash";
 import { db } from "../../db";
 import { images } from "../../db/schemas";
-import { eq } from "drizzle-orm";
+import { addTranscodeJob } from "../../queue";
+import { videos } from "../../db/schemas/video";
 import { createId } from "@paralleldrive/cuid2";
+import { eq } from "drizzle-orm";
 
 const s3Client = new S3Client({
   region: process.env.MINIO_REGION || "us-east-1",
@@ -72,7 +74,6 @@ const s3Client = new S3Client({
             {
               ID: "AutoCleanIncompleteMultipartUploads",
               Status: "Enabled",
-              Filter: { Prefix: "" }, // Apply to everything in the bucket
               AbortIncompleteMultipartUpload: {
                 DaysAfterInitiation: 1, // Delete parts if upload isn't completed in 1 day
               },
@@ -423,7 +424,18 @@ export const uploadModule = new Elysia({ prefix: "/upload" })
         );
         const publicEndpoint = process.env.MINIO_PUBLIC_URL;
         const fileUrl = `${publicEndpoint}/${bucket}/${key}`;
-        return { success: true, fileUrl };
+
+        // Create database record
+        const [videoRecord] = await db.insert(videos).values({
+          originalKey: key,
+          originalUrl: fileUrl,
+          status: "PENDING"
+        }).returning();
+
+        // Queue transcoding job
+        await addTranscodeJob(videoRecord.id, key);
+
+        return { success: true, fileUrl, videoId: videoRecord.id };
       } catch (error) {
         set.status = 500;
         return {
@@ -444,7 +456,11 @@ export const uploadModule = new Elysia({ prefix: "/upload" })
         ),
       }),
       response: {
-        200: t.Object({ success: t.Boolean() }),
+        200: t.Object({
+          success: t.Boolean(),
+          fileUrl: t.String(),
+          videoId: t.String()
+        }),
         500: t.Object({ error: t.String(), details: t.Optional(t.String()) }),
       },
       detail: {

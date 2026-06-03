@@ -12,6 +12,7 @@ import { ticket } from "./modules/ticket";
 import { admin } from "./modules/admin";
 import { busses } from "./modules/busses";
 import { uploadModule } from "./modules/upload";
+import { videoModule } from "./modules/video";
 import { openapi } from "@elysia/openapi";
 
 export const app = new Elysia({ prefix: "/api", aot: true })
@@ -35,6 +36,8 @@ export const app = new Elysia({ prefix: "/api", aot: true })
           { name: "Ticket", description: "Ticket management" },
           { name: "Admin", description: "Admin management" },
           { name: "Bus", description: "Bus-related endpoints" },
+          { name: "Upload", description: "Upload management" },
+          { name: "Video", description: "Video transcoding management" },
         ],
       },
       exclude: {
@@ -54,6 +57,7 @@ export const app = new Elysia({ prefix: "/api", aot: true })
   .use(admin)
   .use(busses)
   .use(uploadModule)
+  .use(videoModule)
   .get("/", "Hello Nextjs from elysiajs!");
 
 process.on("SIGINT", async () => {

@@ -11,4 +11,4 @@ export * from "./buses"
 export * from "./train"
 export * from "./event"
 export * from "./image"
-
+export * from "./video"
