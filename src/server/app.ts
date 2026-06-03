@@ -14,6 +14,7 @@ import { busses } from "./modules/busses";
 import { uploadModule } from "./modules/upload";
 import { videoModule } from "./modules/video";
 import { openapi } from "@elysia/openapi";
+import "./queue/transcode.worker";
 
 export const app = new Elysia({ prefix: "/api", aot: true })
   .use(
