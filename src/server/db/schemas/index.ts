@@ -10,4 +10,5 @@ export * from "./actor"
 export * from "./buses"
 export * from "./train"
 export * from "./event"
+export * from "./image"
 

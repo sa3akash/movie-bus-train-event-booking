@@ -11,6 +11,7 @@ import { review } from "./modules/review";
 import { ticket } from "./modules/ticket";
 import { admin } from "./modules/admin";
 import { busses } from "./modules/busses";
+import { uploadModule } from "./modules/upload";
 import { openapi } from "@elysia/openapi";
 
 export const app = new Elysia({ prefix: "/api", aot: true })
@@ -52,6 +53,7 @@ export const app = new Elysia({ prefix: "/api", aot: true })
   .use(ticket)
   .use(admin)
   .use(busses)
+  .use(uploadModule)
   .get("/", "Hello Nextjs from elysiajs!");
 
 process.on("SIGINT", async () => {

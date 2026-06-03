@@ -2,13 +2,14 @@ import { index, pgTable, primaryKey, text, timestamp, varchar } from "drizzle-or
 import { relations } from "drizzle-orm";
 import { defaultColumns } from "./defaultKey";
 import { movies } from "./movie";
+import { images } from "./image";
 
 export const actors = pgTable("actors", {
   ...defaultColumns,
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   bio: text("bio"),
-  imageUrl: varchar("image_url", { length: 500 }),
+  imageId: varchar("image_id", { length: 36 }).references(() => images.id, { onDelete: "set null" }),
   birthDate: timestamp("birth_date"),
   birthPlace: varchar("birth_place", { length: 255 }),
 }, (table) => [
@@ -30,8 +31,12 @@ export const movieActors = pgTable("movie_actors", {
   primaryKey({ columns: [table.movieId, table.actorId] }),
 ]);
 
-export const actorsRelations = relations(actors, ({ many }) => ({
+export const actorsRelations = relations(actors, ({ many, one }) => ({
   movieActors: many(movieActors),
+  image: one(images, {
+    fields: [actors.imageId],
+    references: [images.id],
+  }),
 }));
 
 export const movieActorsRelations = relations(movieActors, ({ one }) => ({

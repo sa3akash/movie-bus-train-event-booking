@@ -7,6 +7,7 @@ import { bookings } from "./booking";
 import { showSeats } from "./seats";
 import { reviews, wishlist } from "./reviews";
 import { movieActors } from "./actor";
+import { images } from "./image";
 
 export const genres = pgTable("genres", {
   ...defaultColumns,
@@ -29,7 +30,7 @@ export const movies = pgTable("movies", {
     rating: decimal("rating", { precision: 3, scale: 2 }).notNull(),
     price: decimal("price", { precision: 10, scale: 2 }).notNull(),
     status: movieStatusEnum("status").notNull().default("COMING_SOON"),
-    posterUrl: varchar("poster_url", { length: 500 }),
+    posterId: varchar("poster_id", { length: 36 }).references(() => images.id, { onDelete: "set null" }),
     trailerUrl: varchar("trailer_url", { length: 500 }),
     cast: jsonb("cast"), // [{name, role, image}]
     crew: jsonb("crew"), // [{name, role}]
@@ -76,11 +77,15 @@ export const genresRelations = relations(genres, ({ many }) => ({
   movieToGenres: many(movieToGenres),
 }));
 
-export const moviesRelations = relations(movies, ({ many }) => ({
+export const moviesRelations = relations(movies, ({ many, one }) => ({
   shows: many(shows),
   reviews: many(reviews),
   movieToGenres: many(movieToGenres),
   movieActors: many(movieActors),
+  poster: one(images, {
+    fields: [movies.posterId],
+    references: [images.id],
+  }),
 }));
 
 export const movieToGenresRelations = relations(movieToGenres, ({ one }) => ({

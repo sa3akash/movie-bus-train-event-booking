@@ -12,6 +12,7 @@ import { defaultColumns } from "./defaultKey";
 import { bookings, userCoupons } from "./booking";
 import { reviews, wishlist, reviewLikes, userRewards, rewardTransactions } from "./reviews";
 import { auditLogs, analyticsEvents } from "./audit";
+import { images } from "./image";
 
 export const roles = pgTable("roles", {
   ...defaultColumns,
@@ -85,6 +86,7 @@ export const usersTable = pgTable("users", {
   ...defaultColumns,
   name: varchar("name", { length: 255 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
+  avatarId: varchar("avatar_id", { length: 36 }).references(() => images.id, { onDelete: "set null" }),
 
   isEmailVerified: boolean("is_email_verified").default(false),
   passwordHash: varchar("password_hash", { length: 255 }).notNull(),
@@ -167,6 +169,10 @@ export const usersRelations = relations(usersTable, ({ many, one }) => ({
   rewardTransactions: many(rewardTransactions),
   auditLogs: many(auditLogs),
   analyticsEvents: many(analyticsEvents),
+  avatar: one(images, {
+    fields: [usersTable.avatarId],
+    references: [images.id],
+  }),
 }));
 
 export const rolesRelations = relations(roles, ({ many }) => ({
