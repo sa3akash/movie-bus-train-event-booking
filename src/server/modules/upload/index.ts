@@ -64,24 +64,9 @@ const s3Client = new S3Client({
       }),
     );
 
-    // Apply Lifecycle Rule to automatically abort incomplete multipart uploads after 1 day
-    // This perfectly cleans up orphaned parts if the user loses network connection!
-    await s3Client.send(
-      new PutBucketLifecycleConfigurationCommand({
-        Bucket: bucket,
-        LifecycleConfiguration: {
-          Rules: [
-            {
-              ID: "AutoCleanIncompleteMultipartUploads",
-              Status: "Enabled",
-              AbortIncompleteMultipartUpload: {
-                DaysAfterInitiation: 1, // Delete parts if upload isn't completed in 1 day
-              },
-            },
-          ],
-        },
-      }),
-    );
+    // Note: To automatically clean up incomplete multipart uploads,
+    // please configure a Lifecycle Rule directly in your Minio Console.
+    // (AbortIncompleteMultipartUpload: 1 day)
 
     console.log(
       `Bucket ${bucket} is now ready, publicly readable, and has auto-cleanup enabled.`,

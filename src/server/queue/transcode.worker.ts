@@ -34,7 +34,7 @@ const probeVideo = (filePath: string): Promise<ffmpeg.FfprobeData> => {
   });
 };
 
-const redisConnection = new Redis(process.env.REDIS_URL || "redis://localhost:6379");
+const redisConnection = new Redis(process.env.REDIS_URL!);
 
 export const transcodeWorker = new Worker(
   "video-transcode",
