@@ -30,7 +30,7 @@ export default function ShakaPlayer({
     let localInstance: PlayerInstance | null = null;
 
     const setup = async () => {
-      localInstance = await initPlayer(
+      const instance = await initPlayer(
         videoRef.current!,
         containerRef.current!,
         manifestUrl,
@@ -38,8 +38,17 @@ export default function ShakaPlayer({
         onPlayerReady
       );
       
-      if (mounted && localInstance) {
-        setPlayerInstance(localInstance);
+      if (mounted && instance) {
+        localInstance = instance;
+        setPlayerInstance(instance);
+      } else if (instance) {
+        // If unmounted while setting up, destroy it immediately to prevent multiple videos
+        try {
+          instance.ui.destroy();
+          instance.player.destroy();
+        } catch (e) {
+          console.error("Failed to destroy player instance", e);
+        }
       }
     };
 

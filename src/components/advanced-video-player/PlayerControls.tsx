@@ -1,0 +1,43 @@
+"use client";
+
+import React from "react";
+import { PlaybackButtons } from "./PlaybackButtons";
+import { VolumeControl } from "./VolumeControl";
+import { TimeDisplay } from "./TimeDisplay";
+import { ProgressBar } from "./ProgressBar";
+import { useAdvancedPlayer } from "@/context/AdvancedPlayerContext";
+import { Maximize, Minimize } from "lucide-react";
+
+export const PlayerControls = () => {
+  const { toggleFullscreen, isFullscreen, isAdPlaying } = useAdvancedPlayer();
+
+  return (
+    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-auto flex flex-col gap-2">
+      {/* Top row: Progress Bar */}
+      <ProgressBar />
+
+      {/* Bottom row: Controls */}
+      <div className="flex items-center justify-between mt-1">
+        
+        {/* Left Side: Playback, Volume, Time */}
+        <div className="flex items-center gap-4">
+          <PlaybackButtons />
+          {!isAdPlaying && <VolumeControl />}
+          {!isAdPlaying && <TimeDisplay />}
+        </div>
+
+        {/* Right Side: Fullscreen, Settings */}
+        <div className="flex items-center gap-4">
+          <button
+            onClick={toggleFullscreen}
+            className="p-1.5 text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/10"
+            title="Fullscreen"
+          >
+            {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+          </button>
+        </div>
+        
+      </div>
+    </div>
+  );
+};

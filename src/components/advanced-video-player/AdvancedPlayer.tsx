@@ -1,0 +1,101 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import { useAdvancedPlayer, AdvancedPlayerProvider } from "@/context/AdvancedPlayerContext";
+import { PlayerControls } from "./PlayerControls";
+import { AdOverlay } from "./AdOverlay";
+import { Loader2 } from "lucide-react";
+
+interface AdvancedPlayerProps {
+  manifestUrl: string;
+  videoId: string;
+  posterUrl?: string;
+}
+
+const PlayerInner = ({ manifestUrl, videoId, posterUrl }: AdvancedPlayerProps) => {
+  const { videoRef, containerRef, initializePlayer, isBuffering, isAdPlaying } = useAdvancedPlayer();
+  const [isIdle, setIsIdle] = useState(false);
+
+  useEffect(() => {
+    initializePlayer(manifestUrl, videoId);
+  }, [manifestUrl, videoId, initializePlayer]);
+
+  // Idle detection for hiding controls
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+    const handleMouseMove = () => {
+      setIsIdle(false);
+      clearTimeout(timeout);
+      timeout = setTimeout(() => setIsIdle(true), 3000);
+    };
+    
+    const handleMouseLeave = () => setIsIdle(true);
+    const handleMouseEnter = () => handleMouseMove();
+
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener("mousemove", handleMouseMove);
+      container.addEventListener("mouseleave", handleMouseLeave);
+      container.addEventListener("mouseenter", handleMouseEnter);
+      
+      // Initial trigger
+      handleMouseMove();
+    }
+    
+    return () => {
+      clearTimeout(timeout);
+      if (container) {
+        container.removeEventListener("mousemove", handleMouseMove);
+        container.removeEventListener("mouseleave", handleMouseLeave);
+        container.removeEventListener("mouseenter", handleMouseEnter);
+      }
+    };
+  }, [containerRef]);
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-border/50 group select-none"
+    >
+      {/* Video Element */}
+      <video
+        ref={videoRef}
+        poster={posterUrl}
+        className="w-full h-full object-contain"
+        autoPlay
+        playsInline
+      />
+
+      {/* Loading Overlay */}
+      {isBuffering && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm pointer-events-none z-10 transition-opacity">
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
+        </div>
+      )}
+
+      {/* Ad Overlay Layer */}
+      {isAdPlaying && <AdOverlay />}
+
+      {/* Player Controls */}
+      <div 
+        className={`absolute inset-0 pointer-events-none transition-opacity duration-500 z-20 ${
+          isIdle && !isBuffering ? "opacity-0" : "opacity-100"
+        }`}
+      >
+        {/* Subtle top gradient for visibility if needed */}
+        <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+        
+        {/* Main Controls at bottom */}
+        <PlayerControls />
+      </div>
+    </div>
+  );
+};
+
+export const AdvancedPlayer = (props: AdvancedPlayerProps) => {
+  return (
+    <AdvancedPlayerProvider>
+      <PlayerInner {...props} />
+    </AdvancedPlayerProvider>
+  );
+};

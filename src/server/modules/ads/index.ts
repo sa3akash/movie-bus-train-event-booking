@@ -4,6 +4,24 @@ import { ads } from "../../db/schemas/ads";
 import { eq, and, sql } from "drizzle-orm";
 import { isAdmin } from "../../middlewares/auth";
 
+import { adTracking } from "../../db/schemas/ads";
+
+// Helper function to generate tracking URLs for all events
+const generateTracking = (adId: string) => {
+  const events = [
+    "impression", "clickTracking", "start", "firstQuartile", "midpoint", 
+    "thirdQuartile", "complete", "skip", "error", "resume", "pause", 
+    "mute", "unmute"
+  ];
+  
+  const trackingObj: Record<string, string[]> = {};
+  events.forEach((event) => {
+    trackingObj[event] = [`/api/ads/track?event=${event}&adId=${adId}`];
+  });
+  
+  return trackingObj;
+};
+
 export const adsModule = new Elysia({ prefix: "/ads" })
   .get(
     "/",
@@ -25,22 +43,25 @@ export const adsModule = new Elysia({ prefix: "/ads" })
         limit: 1,
       });
 
+      const activePostRollAds = await db.query.ads.findMany({
+        where: and(eq(ads.isActive, true), eq(ads.category, "POST_ROLL")),
+        orderBy: sql`RANDOM()`,
+        limit: 1,
+      });
+
       const customAds = [];
 
       if (activePreRollAds.length > 0) {
         const ad = activePreRollAds[0];
         customAds.push({
           id: ad.id,
+          category: ad.category,
           startTime: 0,
           endTime: null,
           uri: ad.uri,
-          isSkippable: ad.isSkippable,
+          isSkippable: (ad.skipOffset !== null && ad.skipOffset > 0) ? true : ad.isSkippable,
           skipOffset: ad.skipOffset,
-          tracking: {
-            impression: [`/api/ads/track?event=impression&adId=${ad.id}`],
-            complete: [`/api/ads/track?event=complete&adId=${ad.id}`],
-            skip: [`/api/ads/track?event=skip&adId=${ad.id}`],
-          },
+          tracking: generateTracking(ad.id),
         });
       }
 
@@ -50,16 +71,27 @@ export const adsModule = new Elysia({ prefix: "/ads" })
         const randomStartTime = Math.floor(Math.random() * (120 - 30 + 1)) + 30;
         customAds.push({
           id: ad.id,
+          category: ad.category,
           startTime: randomStartTime,
           endTime: null,
           uri: ad.uri,
-          isSkippable: ad.isSkippable,
+          isSkippable: (ad.skipOffset !== null && ad.skipOffset > 0) ? true : ad.isSkippable,
           skipOffset: ad.skipOffset,
-          tracking: {
-            impression: [`/api/ads/track?event=impression&adId=${ad.id}`],
-            complete: [`/api/ads/track?event=complete&adId=${ad.id}`],
-            skip: [`/api/ads/track?event=skip&adId=${ad.id}`],
-          },
+          tracking: generateTracking(ad.id),
+        });
+      }
+
+      if (activePostRollAds.length > 0) {
+        const ad = activePostRollAds[0];
+        customAds.push({
+          id: ad.id,
+          category: ad.category,
+          startTime: null, // POST_ROLL relies on the `post: true` flag, not a start time
+          endTime: null,
+          uri: ad.uri,
+          isSkippable: (ad.skipOffset !== null && ad.skipOffset > 0) ? true : ad.isSkippable,
+          skipOffset: ad.skipOffset,
+          tracking: generateTracking(ad.id),
         });
       }
 
@@ -76,12 +108,24 @@ export const adsModule = new Elysia({ prefix: "/ads" })
       },
     }
   )
-  .get(
+  .all(
     "/track",
-    ({ query }) => {
-      const { event, adId } = query;
+    async ({ query, body }) => {
+      // Handle both GET queries and POST body/queries
+      const event = query?.event || (body as any)?.event;
+      const adId = query?.adId || (body as any)?.adId;
 
-      console.log(`[AD TRACKING] Ad '${adId}' triggered event: '${event}'`);
+      if (event && adId) {
+        try {
+          await db.insert(adTracking).values({
+            adId: adId as string,
+            event: event as string,
+          });
+          console.log(`[AD TRACKING DB] Logged '${event}' for Ad '${adId}'`);
+        } catch (error) {
+          console.error(`[AD TRACKING DB] Failed to log '${event}' for Ad '${adId}'`, error);
+        }
+      }
 
       return {
         success: true,
@@ -89,13 +133,9 @@ export const adsModule = new Elysia({ prefix: "/ads" })
       };
     },
     {
-      query: t.Object({
-        event: t.Optional(t.String()),
-        adId: t.Optional(t.String()),
-      }),
       detail: {
         summary: "Track Ad Events",
-        description: "Track impressions, completes, and skips for ads",
+        description: "Track impressions, completes, skips, etc. for ads and save to database (supports GET and POST)",
         tags: ["Ads"],
       },
     }

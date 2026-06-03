@@ -44,18 +44,6 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
   
   const storageRef = useRef<any>(null);
   const shakaRef = useRef<any>(null);
-  // Keep track of dynamically registered ads to prevent duplicate configuration loops
-  const registeredAdsRef = useRef<Set<string>>(new Set());
-
-  const refreshDownloads = useCallback(async () => {
-    if (!storageRef.current) return;
-    try {
-      const list = await storageRef.current.list();
-      setDownloads(list);
-    } catch (err) {
-      console.error("Failed to list downloaded content", err);
-    }
-  }, []);
 
   useEffect(() => {
     // Dynamic import to avoid SSR issues
@@ -82,7 +70,17 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
         storageRef.current = null;
       }
     };
-  }, [refreshDownloads]);
+  }, []);
+
+  const refreshDownloads = useCallback(async () => {
+    if (!storageRef.current) return;
+    try {
+      const list = await storageRef.current.list();
+      setDownloads(list);
+    } catch (err) {
+      console.error("Failed to list downloaded content", err);
+    }
+  }, []);
 
   const downloadContent = useCallback(async (manifestUri: string, videoId: string) => {
     if (!storageRef.current) throw new Error("Storage not initialized");
@@ -105,9 +103,11 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
     };
 
     try {
+      // Must await the .promise of the IAbortableOperation
       const operation = storageRef.current.store(manifestUri, metadata);
       await operation.promise;
       
+      // Clear progress after success
       setDownloadProgress((prev) => {
         const next = { ...prev };
         delete next[videoId];
@@ -116,6 +116,7 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
 
       await refreshDownloads();
     } catch (error) {
+      // Clear progress on error
       setDownloadProgress((prev) => {
         const next = { ...prev };
         delete next[videoId];
@@ -134,7 +135,7 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
       if (operation.promise) {
         await operation.promise;
       } else {
-         await operation;
+         await operation; // in case older shaka version directly returns promise
       }
       await refreshDownloads();
     } catch (error) {
@@ -156,10 +157,11 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
     try {
       const player = new shaka.Player(videoElement);
       const ui = new shaka.ui.Overlay(player, containerElement, videoElement);
-      const controls = ui.getControls();
+      
+      // Global Player Configuration can go here!
+      // player.configure({ ... });
 
-      // Clear out previously tracked ads for a fresh instance initiation
-      registeredAdsRef.current.clear();
+      const controls = ui.getControls();
 
       // Listen for error events
       player.addEventListener("error", (event: any) => {
@@ -173,9 +175,9 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
       // Initialize Custom AdManager Logic
       try {
         const adManager = player.getAdManager();
-        // const csContainer = controls.getClientSideAdContainer();
-        // const ssContainer = controls.getServerSideAdContainer();
-        // adManager.setContainers(csContainer, ssContainer);
+        // Note: Because we are using Shaka UI, we DO NOT need to manually call setContainers(), 
+        // initClientSide(), or initInterstitial(). The UI handles it automatically.
+
 
         // Fetch custom ads from our self-hosted Ad Server API route
         const adRequestUrl = videoId ? `/api/ads?videoId=${videoId}` : `/api/ads`;
@@ -184,54 +186,36 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
         
         if (data.success && data.ads) {
           data.ads.forEach((ad: any) => {
-            // Safety check: skip adding if this specific ad ID has already been assigned 
-            if (registeredAdsRef.current.has(ad.id)) return;
-
-            // Fix Cross-Origin tracking issues:
-            // Shaka Player resolves relative tracking URLs against the ad's manifest URI.
-            // If the ad is hosted on a CDN, the tracking URL becomes cross-origin and fails/aborts the ad!
-            const safeTracking: Record<string, string[]> = {};
-            if (ad.tracking) {
-              for (const [event, urls] of Object.entries(ad.tracking)) {
-                safeTracking[event] = (urls as string[]).map((url: string) => 
-                  url.startsWith('/') ? `${window.location.origin}${url}` : url
-                );
-              }
-            }
-
             adManager.addCustomInterstitial({
               id: ad.id,
-              groupId: ad.groupId || null,
-              startTime: ad.startTime === 0 ? null : ad.startTime,
-              endTime: ad.endTime ?? null,
+              groupId: null,
+              startTime: ad.startTime,
+              endTime: ad.endTime,
               uri: ad.uri,
-              mimeType: ad.mimeType || null,
-              isSkippable: ad.isSkippable ?? true,
-              skipOffset: ad.skipOffset ?? 5,
-              skipFor: ad.skipFor || null,
+              mimeType: null,
+              isSkippable: ad.isSkippable,
+              skipOffset: ad.skipOffset,
+              skipFor: null,
               canJump: false,
-              resumeOffset: ad.resumeOffset ?? null, // Must be null to resume where it left off! 0 restarts video.
-              playoutLimit: ad.playoutLimit ?? null, // Null is default, 1 might strictly limit duration in some edge cases
+              resumeOffset: null,
+              playoutLimit: null,
               once: true,
-              pre: ad.category === "PRE_ROLL", // Use explicit DB category
-              post: ad.category === "POST_ROLL", // Support post-roll
+              pre: false,
+              post: false,
               timelineRange: false,
               loop: false,
               overlay: null,
               displayOnBackground: false,
               currentVideo: null,
               background: null,
-              clickThroughUrl: ad.clickThroughUrl || null,
-              tracking: Object.keys(safeTracking).length > 0 ? safeTracking : null,
-               
+              clickThroughUrl: null,
+              tracking: ad.tracking,
             });
-
-            registeredAdsRef.current.add(ad.id);
-            console.log(`Injected custom ad safely: ${ad.id} at ${ad.startTime}s`);
+            console.log(`Injected custom ad: ${ad.id} at ${ad.startTime}s`);
           });
         }
       } catch (adErr) {
-        console.warn("Failed to load custom ads cleanly", adErr);
+        console.warn("Failed to load custom ads", adErr);
       }
 
       if (onPlayerReady) {

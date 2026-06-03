@@ -20,3 +20,16 @@ export const ads = pgTable("ads", {
     .defaultNow()
     .$onUpdate(() => new Date()),
 });
+
+export const adTracking = pgTable("ad_tracking", {
+  id: text("id")
+    .$defaultFn(() => createId())
+    .primaryKey(),
+  adId: text("ad_id")
+    .notNull()
+    .references(() => ads.id, { onDelete: "cascade" }),
+  event: text("event").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

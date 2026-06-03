@@ -8,11 +8,10 @@ import { VideoInfo } from "@/components/video/VideoInfo";
 import { VideoActions } from "@/components/video/VideoActions";
 import { useShakaContext } from "@/context/ShakaContext";
 
-// Dynamically import the ShakaPlayer with NO SSR because it relies on window/navigator.
-const ShakaPlayer = dynamic(() => import("@/components/video/ShakaPlayer"), {
+const AdvancedPlayer = dynamic(() => import("@/components/advanced-video-player/AdvancedPlayer").then(mod => mod.AdvancedPlayer), {
   ssr: false,
   loading: () => (
-    <div className="w-full aspect-video bg-black flex items-center justify-center border border-border rounded-xl">
+    <div className="w-full aspect-video bg-black flex items-center justify-center border border-border rounded-xl shadow-2xl">
       <Loader2 className="h-10 w-10 text-primary animate-spin" />
     </div>
   ),
@@ -158,11 +157,10 @@ const VideoPlayerPage = () => {
 
         {/* Player Container */}
         {manifestUrl ? (
-          <div className="w-full shadow-2xl rounded-xl overflow-hidden ring-1 ring-border/50">
-            <ShakaPlayer
+          <div className="w-full">
+            <AdvancedPlayer
               manifestUrl={manifestUrl}
               videoId={params.id as string}
-              onPlayerReady={(p: any) => setPlayerInstance(p)}
             />
           </div>
         ) : (
