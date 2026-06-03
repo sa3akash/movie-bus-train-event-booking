@@ -6,6 +6,7 @@
       "name": "ticket",
       "dependencies": {
         "@aws-sdk/client-s3": "^3.1060.0",
+        "@aws-sdk/s3-request-presigner": "^3.1060.0",
         "@base-ui/react": "^1.4.1",
         "@elysia/openapi": "^1.4.15",
         "@paralleldrive/cuid2": "^3.3.0",
@@ -115,6 +116,8 @@
     "@aws-sdk/middleware-ssec": ["@aws-sdk/middleware-ssec@3.972.12", "", { "dependencies": { "@aws-sdk/types": "^3.973.10", "@smithy/types": "^4.14.3", "tslib": "^2.6.2" } }, "sha512-WiuUb6fqkMAAM3b1+2M2B74Zobh4JUsoS0s2gE792IRJCYaGp2BJzMK9rhfniNijxg1PhVppUeufpiEdDLNy+w=="],
 
     "@aws-sdk/nested-clients": ["@aws-sdk/nested-clients@3.997.15", "", { "dependencies": { "@aws-crypto/sha256-browser": "5.2.0", "@aws-crypto/sha256-js": "5.2.0", "@aws-sdk/core": "^3.974.17", "@aws-sdk/signature-v4-multi-region": "^3.996.31", "@aws-sdk/types": "^3.973.10", "@smithy/core": "^3.24.6", "@smithy/fetch-http-handler": "^5.4.6", "@smithy/node-http-handler": "^4.7.6", "@smithy/types": "^4.14.3", "tslib": "^2.6.2" } }, "sha512-Fpri1/PXKMKveORZ7E00VLTlWS5DkfZkW70PUE+bOnpWpAeHAQLoiDHhkzN3kNWbbSsGg64+IZYiq/EZgME3Mg=="],
+
+    "@aws-sdk/s3-request-presigner": ["@aws-sdk/s3-request-presigner@3.1060.0", "", { "dependencies": { "@aws-sdk/core": "^3.974.17", "@aws-sdk/signature-v4-multi-region": "^3.996.31", "@aws-sdk/types": "^3.973.10", "@smithy/core": "^3.24.6", "@smithy/types": "^4.14.3", "tslib": "^2.6.2" } }, "sha512-20lX+iQNrEinYavfSgZuo9YlLn4U+o0xFl4Fw4oMZ2T2UHEh0dGDcDQkbpydtnzUAlzCQE0WRnDKO65daFC4Sg=="],
 
     "@aws-sdk/signature-v4-multi-region": ["@aws-sdk/signature-v4-multi-region@3.996.31", "", { "dependencies": { "@aws-sdk/types": "^3.973.10", "@smithy/signature-v4": "^5.4.6", "@smithy/types": "^4.14.3", "tslib": "^2.6.2" } }, "sha512-Kn2up9SlG1KC6wRtwf0d7waTGF6rvp9DxYqB54x6UCKdQ6kyaXCqHL4WGb5vUJga5kS8FxnjhY0LqM28aMvnNQ=="],
 

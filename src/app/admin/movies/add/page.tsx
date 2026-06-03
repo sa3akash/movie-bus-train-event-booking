@@ -31,6 +31,7 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { ImageUpload } from "@/components/admin/ImageUpload";
+import { VideoUpload } from "@/components/admin/VideoUpload";
 
 const STATUS_OPTIONS = [
   { value: "COMING_SOON", label: "Coming Soon" },
@@ -48,6 +49,16 @@ function slugify(text: string) {
 }
 
 export default function AddMoviePage() {
+  return (
+    <React.Suspense
+      fallback={<div className="p-8 text-center">Loading...</div>}
+    >
+      <AddMovieForm />
+    </React.Suspense>
+  );
+}
+
+function AddMovieForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
@@ -119,7 +130,13 @@ export default function AddMoviePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.title || !form.slug || !form.releaseDate || !form.duration || !form.price) {
+    if (
+      !form.title ||
+      !form.slug ||
+      !form.releaseDate ||
+      !form.duration ||
+      !form.price
+    ) {
       toast.error("Please fill in all required fields");
       return;
     }
@@ -157,7 +174,9 @@ export default function AddMoviePage() {
       }
 
       toast.success(
-        isEditMode ? "Movie updated successfully" : "Movie created successfully"
+        isEditMode
+          ? "Movie updated successfully"
+          : "Movie created successfully",
       );
       router.push("/admin/movies");
     } catch (e: any) {
@@ -207,7 +226,9 @@ export default function AddMoviePage() {
               <Film className="h-4 w-4 text-indigo-500" />
               Basic Information
             </CardTitle>
-            <CardDescription>Title, slug, description and language.</CardDescription>
+            <CardDescription>
+              Title, slug, description and language.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -424,32 +445,37 @@ export default function AddMoviePage() {
               <Image className="h-4 w-4 text-indigo-500" />
               Media URLs
             </CardTitle>
-            <CardDescription>Poster image and trailer video URLs.</CardDescription>
+            <CardDescription>
+              Poster image and trailer video URLs.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="poster">Poster Image</Label>
                 <ImageUpload
-                  value={form.posterUrl ? { url: form.posterUrl, id: form.posterId } : null}
-                  onChange={(img) => setForm((p) => ({ ...p, posterId: img?.id || "", posterUrl: img?.url || "" }))}
+                  value={
+                    form.posterUrl
+                      ? { url: form.posterUrl, id: form.posterId }
+                      : null
+                  }
+                  onChange={(img) =>
+                    setForm((p) => ({
+                      ...p,
+                      posterId: img?.id || "",
+                      posterUrl: img?.url || "",
+                    }))
+                  }
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="trailerUrl">Trailer URL</Label>
-                <div className="relative">
-                  <Video className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="trailerUrl"
-                    type="url"
-                    placeholder="https://youtube.com/..."
-                    className="pl-8"
-                    value={form.trailerUrl}
-                    onChange={(e) =>
-                      setForm((p) => ({ ...p, trailerUrl: e.target.value }))
-                    }
-                  />
-                </div>
+                <Label htmlFor="trailer">Trailer Video</Label>
+                <VideoUpload
+                  value={form.trailerUrl}
+                  onChange={(url) =>
+                    setForm((p) => ({ ...p, trailerUrl: url || "" }))
+                  }
+                />
               </div>
             </div>
           </CardContent>

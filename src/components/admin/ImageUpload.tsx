@@ -11,6 +11,7 @@ interface ImageUploadProps {
 
 export function ImageUpload({ value, onChange, className = "" }: ImageUploadProps) {
   const [loading, setLoading] = useState(false);
+  const [sessionUploadedId, setSessionUploadedId] = useState<string | null>(null);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -32,6 +33,7 @@ export function ImageUpload({ value, onChange, className = "" }: ImageUploadProp
 
       const data = await res.json();
       if (data.success && data.image) {
+        setSessionUploadedId(data.image.id);
         onChange({ url: data.image.url, id: data.image.id });
         toast.success("Image uploaded successfully");
       } else {
@@ -41,9 +43,20 @@ export function ImageUpload({ value, onChange, className = "" }: ImageUploadProp
       toast.error(error.message || "Failed to upload image");
     } finally {
       setLoading(false);
-      // clear the input
       e.target.value = "";
     }
+  };
+
+  const handleRemove = () => {
+    if (value && value.id === sessionUploadedId) {
+      // Delete orphaned file from server
+      fetch("/api/upload", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: value.url }),
+      }).catch((err) => console.error("Failed to cleanup image", err));
+    }
+    onChange(null);
   };
 
   return (
@@ -57,7 +70,7 @@ export function ImageUpload({ value, onChange, className = "" }: ImageUploadProp
           />
           <button
             type="button"
-            onClick={() => onChange(null)}
+            onClick={handleRemove}
             className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 shadow-sm transition-colors cursor-pointer"
           >
             <X className="h-4 w-4" />
