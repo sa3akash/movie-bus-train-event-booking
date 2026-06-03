@@ -161,6 +161,7 @@ const VideoPlayerPage = () => {
           <div className="w-full shadow-2xl rounded-xl overflow-hidden ring-1 ring-border/50">
             <ShakaPlayer
               manifestUrl={manifestUrl}
+              videoId={params.id as string}
               onPlayerReady={(p: any) => setPlayerInstance(p)}
             />
           </div>

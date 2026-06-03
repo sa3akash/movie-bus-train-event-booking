@@ -34,6 +34,7 @@ import {
   CreditCard,
   Settings,
   ChevronRight,
+  MonitorPlay,
 } from "lucide-react";
 
 interface SubSubNavItem {
@@ -56,6 +57,7 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   { title: "Dashboard", url: "/admin", icon: LayoutDashboard },
+  { title: "Ads Manage", url: "/admin/ads", icon: MonitorPlay },
   { title: "Transactions", url: "/admin/transactions", icon: CreditCard },
   { title: "Users", url: "/admin/users", icon: Users },
 ];

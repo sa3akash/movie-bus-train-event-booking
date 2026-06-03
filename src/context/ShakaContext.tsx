@@ -29,6 +29,7 @@ interface ShakaContextType {
     videoElement: HTMLVideoElement,
     containerElement: HTMLDivElement,
     manifestUrl: string,
+    videoId?: string,
     onPlayerReady?: (player: any) => void
   ) => Promise<PlayerInstance | null>;
 }
@@ -147,6 +148,7 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
     videoElement: HTMLVideoElement,
     containerElement: HTMLDivElement,
     manifestUrl: string,
+    videoId?: string,
     onPlayerReady?: (player: any) => void
   ): Promise<PlayerInstance | null> => {
     if (!shakaRef.current) return null;
@@ -169,6 +171,79 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
       controls.addEventListener("error", (event: any) => {
         console.error("Shaka UI Error", event.detail);
       });
+
+      // Initialize Custom AdManager Logic
+      try {
+        const adManager = player.getAdManager();
+        const csContainer = controls.getClientSideAdContainer();
+        const ssContainer = controls.getServerSideAdContainer();
+        adManager.setContainers(csContainer, ssContainer);
+
+        // Required to bind the Shaka UI to client-side ad events (like skip buttons)
+        try {
+          adManager.initClientSide(csContainer, videoElement);
+        } catch (e) {
+          console.warn("initClientSide might have failed if IMA is missing, but proceeding for Interstitials.", e);
+        }
+
+        // Manually ensure the main video pauses when a custom interstitial overlay starts playing
+        adManager.addEventListener("ad-started", () => {
+          if (!videoElement.paused) {
+            videoElement.pause();
+          }
+        });
+
+        // Ensure main video resumes when ad finishes or is skipped
+        adManager.addEventListener("ad-stopped", () => {
+          if (videoElement.paused) {
+            videoElement.play().catch(() => {});
+          }
+        });
+        
+        adManager.addEventListener("ad-skipped", () => {
+          if (videoElement.paused) {
+            videoElement.play().catch(() => {});
+          }
+        });
+
+        // Fetch custom ads from our self-hosted Ad Server API route
+        const adRequestUrl = videoId ? `/api/ads?videoId=${videoId}` : `/api/ads`;
+        const res = await fetch(adRequestUrl);
+        const data = await res.json();
+        
+        if (data.success && data.ads) {
+          data.ads.forEach((ad: any) => {
+            adManager.addCustomInterstitial({
+              id: ad.id,
+              groupId: null,
+              startTime: ad.startTime,
+              endTime: ad.endTime,
+              uri: ad.uri,
+              mimeType: null,
+              isSkippable: ad.isSkippable,
+              skipOffset: ad.skipOffset,
+              skipFor: null,
+              canJump: false,
+              resumeOffset: null,
+              playoutLimit: null,
+              once: true,
+              pre: false,
+              post: false,
+              timelineRange: false,
+              loop: false,
+              overlay: null,
+              displayOnBackground: false,
+              currentVideo: null,
+              background: null,
+              clickThroughUrl: null,
+              tracking: ad.tracking,
+            });
+            console.log(`Injected custom ad: ${ad.id} at ${ad.startTime}s`);
+          });
+        }
+      } catch (adErr) {
+        console.warn("Failed to load custom ads", adErr);
+      }
 
       if (onPlayerReady) {
         onPlayerReady(player);
@@ -194,7 +269,7 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
         refreshDownloads,
         downloadContent,
         removeContent,
-        initPlayer,
+        initPlayer
       }}
     >
       {children}

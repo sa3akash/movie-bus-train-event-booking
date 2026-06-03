@@ -13,6 +13,8 @@
 # testing
 /coverage
 
+/public/ads*
+
 # next.js
 /.next/
 /out/

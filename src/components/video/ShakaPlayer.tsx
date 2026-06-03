@@ -7,12 +7,14 @@ import { useShakaContext, PlayerInstance } from "@/context/ShakaContext";
 
 interface ShakaPlayerProps {
   manifestUrl: string;
+  videoId?: string;
   posterUrl?: string;
   onPlayerReady?: (player: any) => void;
 }
 
 export default function ShakaPlayer({
   manifestUrl,
+  videoId,
   posterUrl,
   onPlayerReady,
 }: ShakaPlayerProps) {
@@ -32,6 +34,7 @@ export default function ShakaPlayer({
         videoRef.current!,
         containerRef.current!,
         manifestUrl,
+        videoId,
         onPlayerReady
       );
       

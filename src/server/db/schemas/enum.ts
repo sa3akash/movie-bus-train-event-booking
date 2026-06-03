@@ -97,3 +97,9 @@ export const userTierEnum = pgEnum("user_tier", [
   "DIAMOND",
 ]);
 
+export const adCategoryEnum = pgEnum("ad_category", [
+  "PRE_ROLL",
+  "MID_ROLL",
+  "POST_ROLL",
+]);
+
