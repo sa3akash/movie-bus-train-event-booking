@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/contexts/theme-provider";
 import { UploadProvider } from "@/providers/UploadProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegister } from "@/components/ServiceWorkerRegister";
-import { ShakaOfflineProvider } from "@/context/ShakaOfflineContext";
+import { ShakaProvider } from "@/context/ShakaContext";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -53,9 +53,9 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <UploadProvider>
-              <ShakaOfflineProvider>
+              <ShakaProvider>
                 {children}
-              </ShakaOfflineProvider>
+              </ShakaProvider>
               <Toaster />
               <ServiceWorkerRegister />
             </UploadProvider>

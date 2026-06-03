@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { VideoInfo } from "@/components/video/VideoInfo";
 import { VideoActions } from "@/components/video/VideoActions";
-import { useShakaOffline } from "@/context/ShakaOfflineContext";
+import { useShakaContext } from "@/context/ShakaContext";
 
 // Dynamically import the ShakaPlayer with NO SSR because it relies on window/navigator.
 const ShakaPlayer = dynamic(() => import("@/components/video/ShakaPlayer"), {
@@ -36,9 +36,9 @@ const VideoPlayerPage = () => {
 
   const [playerInstance, setPlayerInstance] = useState<any>(null);
   const [isDownloaded, setIsDownloaded] = useState(false);
-  const [offlineUri, setOfflineUri] = useState<string | null>(null);
+  const [manifestUrl, setManifestUrl] = useState<string | null>(null);
 
-  const { downloads } = useShakaOffline();
+  const { downloads, isInitialized } = useShakaContext();
 
   useEffect(() => {
     if (!params.id) return;
@@ -62,28 +62,42 @@ const VideoPlayerPage = () => {
       });
   }, [params.id]);
 
-  // Handle offline fallback when downloads are available
+  // Check if video is downloaded and resolve the manifestUrl
   useEffect(() => {
-    if (!loading && !video && params.id) {
-      const found = downloads.find((item) => item.appMetadata?.videoId === params.id);
+    if (!params.id || !isInitialized || loading) return;
+    
+    const found = downloads.find((item) => item.appMetadata?.videoId === params.id);
+    
+    // Set isDownloaded state for the UI
+    setIsDownloaded(!!found);
+    
+    // If we haven't set the manifest URL yet, do it now. 
+    // We only do this once to prevent the player from reloading if a download finishes while watching!
+    if (!manifestUrl) {
       if (found) {
-        console.log("Found video in offline storage context!");
-        setVideo({
-          id: params.id as string,
-          status: "COMPLETED",
-          dashUrl: null,
-          hlsUrl: null,
-          duration: "0",
-          createdAt: new Date().toISOString(),
-          resolutions: ["OFFLINE"],
-        });
-        setIsDownloaded(true);
-        setOfflineUri(found.offlineUri);
+        console.log("Using offline cached video!");
+        setManifestUrl(found.offlineUri);
+        
+        // If network fetch failed, mock a video object to allow offline playback UI
+        if (!video) {
+          setVideo({
+            id: params.id as string,
+            status: "COMPLETED",
+            dashUrl: null,
+            hlsUrl: null,
+            duration: "0",
+            createdAt: new Date().toISOString(),
+            resolutions: ["OFFLINE"],
+          });
+        }
+      } else {
+        console.log("Using network video!");
+        setManifestUrl(video?.dashUrl || video?.hlsUrl || null);
       }
     }
-  }, [loading, video, params.id, downloads]);
+  }, [isInitialized, loading, video, params.id, downloads, manifestUrl]);
 
-  if (loading) {
+  if (loading || !isInitialized) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <Loader2 className="h-12 w-12 text-primary animate-spin" />
@@ -129,8 +143,7 @@ const VideoPlayerPage = () => {
     );
   }
 
-  // Use offlineUri if downloaded, else remote manifest
-  const manifestUrl = offlineUri || video.dashUrl || video.hlsUrl;
+  // Manifest URL is now securely managed in state!
 
   return (
     <div className="min-h-screen bg-background">
@@ -167,7 +180,6 @@ const VideoPlayerPage = () => {
             playerInstance={playerInstance}
             isDownloaded={isDownloaded}
             setIsDownloaded={setIsDownloaded}
-            setOfflineUri={setOfflineUri}
           />
         </div>
       </div>

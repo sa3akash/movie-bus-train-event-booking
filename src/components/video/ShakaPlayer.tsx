@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 "use client";
 
-import React, { useEffect, useRef } from "react";
-// We must use require inside useEffect to avoid Next.js SSR crash with navigator/window.
+import React, { useEffect, useRef, useState } from "react";
 import "shaka-player/dist/controls.css";
+import { useShakaContext, PlayerInstance } from "@/context/ShakaContext";
 
 interface ShakaPlayerProps {
   manifestUrl: string;
@@ -18,48 +18,42 @@ export default function ShakaPlayer({
 }: ShakaPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const { initPlayer, isSupported } = useShakaContext();
+  const [playerInstance, setPlayerInstance] = useState<PlayerInstance | null>(null);
 
   useEffect(() => {
-    // Dynamic import to avoid SSR issues
-    const shaka = require("shaka-player/dist/shaka-player.ui.js");
+    if (!isSupported || !videoRef.current || !containerRef.current) return;
 
-    if (!videoRef.current || !containerRef.current) return;
+    let mounted = true;
+    let localInstance: PlayerInstance | null = null;
 
-    // Initialize Shaka Player
-    const player = new shaka.Player(videoRef.current);
+    const setup = async () => {
+      localInstance = await initPlayer(
+        videoRef.current!,
+        containerRef.current!,
+        manifestUrl,
+        onPlayerReady
+      );
+      
+      if (mounted && localInstance) {
+        setPlayerInstance(localInstance);
+      }
+    };
 
-    // Initialize UI Overlay
-    const ui = new shaka.ui.Overlay(
-      player,
-      containerRef.current,
-      videoRef.current,
-    );
-
-    const controls = ui.getControls();
-
-    // Listen for error events
-    player.addEventListener("error", (event: any) => {
-      console.error("Shaka Player Error", event.detail);
-    });
-
-    controls.addEventListener("error", (event: any) => {
-      console.error("Shaka UI Error", event.detail);
-    });
-
-    if (onPlayerReady) {
-      onPlayerReady(player);
-    }
-
-    // Try to load the manifest
-    player.load(manifestUrl).catch((e: any) => {
-      console.error("Error loading manifest", e);
-    });
+    setup();
 
     return () => {
-      ui.destroy();
-      player.destroy();
+      mounted = false;
+      if (localInstance) {
+        try {
+          localInstance.ui.destroy();
+          localInstance.player.destroy();
+        } catch (e) {
+          console.error("Failed to destroy player instance", e);
+        }
+      }
     };
-  }, [manifestUrl]);
+  }, [manifestUrl, isSupported, initPlayer]); // Ensure initPlayer and isSupported are stable from context
 
   return (
     <div

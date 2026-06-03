@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 import { Share2, ThumbsUp, Download, CheckCircle2, Loader2 } from "lucide-react";
-import { useShakaOffline } from "@/context/ShakaOfflineContext";
+import { useShakaContext } from "@/context/ShakaContext";
 
 interface VideoData {
   id: string;
@@ -15,29 +15,21 @@ interface VideoActionsProps {
   playerInstance: any;
   isDownloaded: boolean;
   setIsDownloaded: (val: boolean) => void;
-  setOfflineUri: (val: string | null) => void;
 }
 
 export const VideoActions: React.FC<VideoActionsProps> = ({ 
   video, 
   playerInstance, 
   isDownloaded, 
-  setIsDownloaded, 
-  setOfflineUri 
+  setIsDownloaded
 }) => {
-  const { downloads, downloadContent, downloadProgress, isSupported } = useShakaOffline();
+  const { downloads, downloadContent, downloadProgress, isSupported } = useShakaContext();
 
   // Check offline storage synchronously from the context state
   useEffect(() => {
     const found = downloads.find((item) => item.appMetadata?.videoId === video.id);
-    if (found) {
-      setIsDownloaded(true);
-      setOfflineUri(found.offlineUri);
-    } else {
-      setIsDownloaded(false);
-      setOfflineUri(null);
-    }
-  }, [downloads, video.id, setIsDownloaded, setOfflineUri]);
+    setIsDownloaded(!!found);
+  }, [downloads, video.id, setIsDownloaded]);
 
   const handleDownload = async () => {
     const manifestUrl = video.dashUrl || video.hlsUrl;

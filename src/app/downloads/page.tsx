@@ -3,10 +3,10 @@
 import React from "react";
 import Link from "next/link";
 import { Download, Play, Trash2, ArrowLeft } from "lucide-react";
-import { useShakaOffline } from "@/context/ShakaOfflineContext";
+import { useShakaContext } from "@/context/ShakaContext";
 
 const DownloadsPage = () => {
-  const { downloads, removeContent, isSupported } = useShakaOffline();
+  const { downloads, removeContent, isSupported } = useShakaContext();
 
   const handleDelete = async (offlineUri: string) => {
     try {
