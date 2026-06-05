@@ -55,11 +55,12 @@ export const adsModule = new Elysia({ prefix: "/ads" })
         const ad = activePreRollAds[0];
         customAds.push({
           id: ad.id,
+          title: ad.title,
           category: ad.category,
           startTime: 0,
           endTime: null,
           uri: ad.uri,
-          isSkippable: (ad.skipOffset !== null && ad.skipOffset > 0) ? true : ad.isSkippable,
+          isSkippable: ad.isSkippable,
           skipOffset: ad.skipOffset,
           tracking: generateTracking(ad.id),
         });
@@ -71,6 +72,7 @@ export const adsModule = new Elysia({ prefix: "/ads" })
         const randomStartTime = Math.floor(Math.random() * (120 - 30 + 1)) + 30;
         customAds.push({
           id: ad.id,
+          title: ad.title,
           category: ad.category,
           startTime: randomStartTime,
           endTime: null,
@@ -85,6 +87,7 @@ export const adsModule = new Elysia({ prefix: "/ads" })
         const ad = activePostRollAds[0];
         customAds.push({
           id: ad.id,
+          title: ad.title,
           category: ad.category,
           startTime: null, // POST_ROLL relies on the `post: true` flag, not a start time
           endTime: null,

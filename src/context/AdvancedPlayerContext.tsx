@@ -55,6 +55,7 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
 
   // Ad state
   const [isAdPlaying, setIsAdPlaying] = useState(false);
+  const isAdPlayingRef = useRef(false);
   const [canSkipAd, setCanSkipAd] = useState(false);
   const [adTimeRemaining, setAdTimeRemaining] = useState(0);
   const [adTimeUntilSkippable, setAdTimeUntilSkippable] = useState(0);
@@ -197,7 +198,40 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
       const ad = e.ad;
       currentAdRef.current = ad;
       setIsAdPlaying(true);
-      setAdTitle(ad.getTitle ? ad.getTitle() : "Advertisement");
+      isAdPlayingRef.current = true;
+      
+      // Explicitly pause the main video so it doesn't advance in the background
+      if (videoRef.current && !videoRef.current.paused) {
+          videoRef.current.pause();
+      }
+      
+      let title = "Advertisement";
+      if (typeof ad.getTitle === 'function' && ad.getTitle()) {
+        title = ad.getTitle();
+      } else {
+        let metadata: { title?: string } | undefined;
+        const id1 = typeof ad.getAdId === 'function' ? ad.getAdId() : null;
+        if (id1 && adMetadataMapRef.current.has(id1)) {
+          metadata = adMetadataMapRef.current.get(id1);
+        }
+        if (!metadata) {
+          for (const key in ad) {
+            const val = ad[key];
+            if (val && typeof val === 'object' && val.id && adMetadataMapRef.current.has(val.id)) {
+              metadata = adMetadataMapRef.current.get(val.id);
+              break;
+            }
+          }
+        }
+        if (!metadata && adMetadataMapRef.current.size === 1) {
+          metadata = Array.from(adMetadataMapRef.current.values())[0];
+        }
+        if (metadata?.title) {
+          title = metadata.title;
+        }
+      }
+      
+      setAdTitle(title);
       
       // isSkippable means "is it a skippable type of ad". canSkipNow means "has the countdown finished".
       setCanSkipAd(ad.canSkipNow ? ad.canSkipNow() : false);
@@ -207,12 +241,13 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     adManager.addEventListener('ad-stopped', () => {
       currentAdRef.current = null;
       setIsAdPlaying(false);
+      isAdPlayingRef.current = false;
       setCanSkipAd(false);
       setAdTimeRemaining(0);
       setAdTimeUntilSkippable(0);
       adContainer.style.pointerEvents = 'none';
       
-      // Force UI to sync back to main video instantly
+      // Sync back UI to the main video explicitly
       if (videoRef.current) {
         setDuration(videoRef.current.duration || 0);
         setCurrentTime(videoRef.current.currentTime || 0);
@@ -235,7 +270,8 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
           
           adMetadataMapRef.current.set(ad.id, {
             isSkippable: ad.isSkippable ?? true,
-            skipOffset: ad.skipOffset ?? 5
+            skipOffset: ad.skipOffset ?? 5,
+            title: ad.title
           });
 
           const safeTracking: Record<string, string[]> = {};
@@ -258,7 +294,7 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
             skipOffset: ad.skipOffset ?? 5,
             skipFor: ad.skipFor || null,
             canJump: false,
-            resumeOffset: ad.resumeOffset ?? null,
+            resumeOffset: ad.category === "PRE_ROLL" ? 0 : (ad.resumeOffset ?? null),
             playoutLimit: ad.playoutLimit ?? null,
             once: true,
             pre: ad.category === "PRE_ROLL",
@@ -298,16 +334,19 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     if (!video) return;
 
     const handleTimeUpdate = () => {
-      if (isAdPlaying) {
-        // Unfortunately standard video.currentTime doesn't always reflect ad time easily 
-        // if it's a media tailor or overlay ad, but for custom interstitials, it plays in the ad video element.
-        // We will just estimate or read from adManager if possible. But for simplicity, we just use the active video.
-      } else {
+      if (!isAdPlayingRef.current) {
         setCurrentTime(video.currentTime);
       }
     };
     const handleDurationChange = () => setDuration(video.duration);
-    const handlePlay = () => setIsPlaying(true);
+    const handlePlay = () => {
+      if (isAdPlayingRef.current) {
+        // Prevent main video from playing during an ad
+        video.pause();
+      } else {
+        setIsPlaying(true);
+      }
+    };
     const handlePause = () => setIsPlaying(false);
     const handleVolumeChange = () => {
       setVolumeState(video.volume);
@@ -327,10 +366,10 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
       video.removeEventListener("pause", handlePause);
       video.removeEventListener("volumechange", handleVolumeChange);
     };
-  }, [isAdPlaying]);
+  }, []);
 
   // Ad metadata lookup map for bulletproof timing
-  const adMetadataMapRef = useRef<Map<string, { isSkippable: boolean, skipOffset: number }>>(new Map());
+  const adMetadataMapRef = useRef<Map<string, { isSkippable: boolean, skipOffset: number, title?: string }>>(new Map());
 
   // Handle ad time updates separately by polling if an ad is playing
   useEffect(() => {
@@ -339,53 +378,77 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
       interval = setInterval(() => {
         const ad = currentAdRef.current;
         if (ad && containerRef.current) {
-          const adVideo = containerRef.current.querySelector('.shaka-custom-ad-container video') as HTMLVideoElement;
-          if (adVideo) {
-            setCurrentTime(adVideo.currentTime);
-            setDuration(adVideo.duration || 0);
-            
-            const remaining = (adVideo.duration || 0) - adVideo.currentTime;
+          // Shaka might create its own video element or use the main video.
+          // Let's find the active video that is playing the ad.
+          const adVideos = Array.from(containerRef.current.querySelectorAll('.shaka-custom-ad-container video')) as HTMLVideoElement[];
+          const activeAdVideo = adVideos.find(v => v.currentTime > 0 && !v.paused) || adVideos.find(v => v.src || v.currentSrc);
+          
+          const activeVideo = activeAdVideo || videoRef.current;
+          
+          let currentAdTime = 0;
+          let currentAdDuration = 0;
+          
+          if (activeAdVideo) {
+            currentAdTime = activeAdVideo.currentTime;
+            currentAdDuration = activeAdVideo.duration || 0;
+          } else if (videoRef.current) {
+            currentAdTime = videoRef.current.currentTime;
+            currentAdDuration = videoRef.current.duration || 0;
+          }
+
+          if (typeof ad.getRemainingTime === 'function') {
+            const r = ad.getRemainingTime();
+            setAdTimeRemaining(isNaN(r) ? 0 : Math.max(0, r));
+          } else {
+            const remaining = currentAdDuration - currentAdTime;
             setAdTimeRemaining(isNaN(remaining) ? 0 : Math.max(0, remaining));
+          }
 
-            // Safely retrieve the ad metadata by searching the ad object for the original config
-            let metadata: { isSkippable: boolean, skipOffset: number } | undefined;
-            
-            // 1. Try getAdId()
-            const id1 = typeof ad.getAdId === 'function' ? ad.getAdId() : null;
-            if (id1 && adMetadataMapRef.current.has(id1)) {
-              metadata = adMetadataMapRef.current.get(id1);
-            }
+          // Safely retrieve the ad metadata by searching the ad object for the original config
+          let metadata: { isSkippable: boolean, skipOffset: number } | undefined;
+          
+          // 1. Try getAdId()
+          const id1 = typeof ad.getAdId === 'function' ? ad.getAdId() : null;
+          if (id1 && adMetadataMapRef.current.has(id1)) {
+            metadata = adMetadataMapRef.current.get(id1);
+          }
 
-            // 2. Rigorously search all properties for the config object
-            if (!metadata) {
-              for (const key in ad) {
-                const val = ad[key];
-                if (val && typeof val === 'object' && val.id && adMetadataMapRef.current.has(val.id)) {
-                  metadata = adMetadataMapRef.current.get(val.id);
-                  break;
-                }
+          // 2. Rigorously search all properties for the config object
+          if (!metadata) {
+            for (const key in ad) {
+              const val = ad[key];
+              if (val && typeof val === 'object' && val.id && adMetadataMapRef.current.has(val.id)) {
+                metadata = adMetadataMapRef.current.get(val.id);
+                break;
               }
-            }
-
-            // 3. Last resort fallback
-            if (!metadata && adMetadataMapRef.current.size === 1) {
-              metadata = Array.from(adMetadataMapRef.current.values())[0];
-            }
-
-            if (metadata?.isSkippable) {
-              const timeUntil = metadata.skipOffset - adVideo.currentTime;
-              setAdTimeUntilSkippable(isNaN(timeUntil) ? 0 : Math.max(0, timeUntil));
-              
-              if (timeUntil <= 0) {
-                setCanSkipAd(true);
-              } else {
-                setCanSkipAd(false);
-              }
-            } else {
-              setAdTimeUntilSkippable(0);
-              setCanSkipAd(false);
             }
           }
+
+          // 3. Last resort fallback
+          if (!metadata && adMetadataMapRef.current.size === 1) {
+            metadata = Array.from(adMetadataMapRef.current.values())[0];
+          }
+
+          // Determine skippability prioritizing our DB metadata over Shaka Player's defaults
+          let timeUntil = 0;
+          let canSkip = false;
+
+          if (metadata && !metadata.isSkippable) {
+            // Strictly enforce non-skippable
+            timeUntil = 0;
+            canSkip = false;
+          } else if (metadata && metadata.isSkippable) {
+            // Strictly enforce our skip offset
+            timeUntil = metadata.skipOffset - currentAdTime;
+            canSkip = timeUntil <= 0;
+          } else if (typeof ad.getTimeUntilSkippable === 'function') {
+            // Fallback to Shaka native logic if no metadata found
+            timeUntil = ad.getTimeUntilSkippable();
+            canSkip = ad.canSkipNow ? ad.canSkipNow() : (timeUntil <= 0);
+          }
+
+          setAdTimeUntilSkippable(isNaN(timeUntil) ? 0 : Math.max(0, timeUntil));
+          setCanSkipAd(canSkip);
         }
       }, 250);
     }

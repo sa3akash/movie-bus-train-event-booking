@@ -210,7 +210,7 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
               skipOffset: ad.skipOffset ?? 5,
               skipFor: ad.skipFor || null,
               canJump: false,
-              resumeOffset: ad.resumeOffset ?? null, // Must be null to resume where it left off! 0 restarts video.
+              resumeOffset: ad.category === "PRE_ROLL" ? 0 : (ad.resumeOffset ?? null), // 0 restarts video.
               playoutLimit: ad.playoutLimit ?? null, // Null is default, 1 might strictly limit duration in some edge cases
               once: true,
               pre: ad.category === "PRE_ROLL", // Use explicit DB category
