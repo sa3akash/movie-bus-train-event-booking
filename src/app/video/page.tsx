@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { Play, Clapperboard, Activity } from "lucide-react";
 import Image from "next/image";
+import { HoverVideoPlayer } from "@/components/video/HoverVideoPlayer";
 
 interface Video {
   id: string;
@@ -13,8 +14,89 @@ interface Video {
   thumbnails: string[] | null;
   blurDataUrls: string[] | null;
   duration: string | null;
+  dashUrl: string | null;
+  hlsUrl: string | null;
   createdAt: string;
 }
+
+const VideoCard = ({ video }: { video: Video }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (isHovered) {
+      timer = setTimeout(() => setShowVideo(true), 400); // 400ms delay like YouTube
+    } else {
+      setShowVideo(false);
+    }
+    return () => clearTimeout(timer);
+  }, [isHovered]);
+
+  return (
+    <Link 
+      href={`/video/${video.id}`} 
+      className="group relative block"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Custom Gradient Thumbnail */}
+      <div className="aspect-video w-full overflow-hidden rounded-xl bg-linear-to-br from-zinc-800 to-zinc-950 border border-border shadow-md transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl group-hover:border-primary/50 relative">
+        
+        {/* Poster Image */}
+        {video.thumbnails && video.thumbnails.length > 0 && (
+          <Image 
+            src={video.thumbnails[0]} 
+            alt="Video Poster" 
+            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${showVideo ? "opacity-0" : "opacity-100"}`}
+            fill
+            blurDataURL={video.blurDataUrls?.[0]}
+            placeholder="blur"
+          />
+        )}
+
+        {/* Video Player */}
+        {showVideo && (video.dashUrl || video.hlsUrl) && (
+          <div className="absolute inset-0 z-10 animate-in fade-in duration-300">
+            <HoverVideoPlayer manifestUrl={(video.dashUrl || video.hlsUrl) as string} />
+          </div>
+        )}
+
+        {/* Play Button Overlay */}
+        {!showVideo && (
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-black/40 backdrop-blur-[2px] z-20">
+            <div className="bg-primary/90 rounded-full p-4 transform translate-y-4 transition-transform duration-300 group-hover:translate-y-0 shadow-lg">
+              <Play className="h-6 w-6 text-primary-foreground fill-current ml-1" />
+            </div>
+          </div>
+        )}
+
+        {/* Duration Badge */}
+        {video.duration && !showVideo && (
+          <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 text-xs font-medium text-white rounded shadow-sm backdrop-blur-md z-20">
+            {Math.floor(parseFloat(video.duration) / 60)}:
+            {Math.floor(parseFloat(video.duration) % 60).toString().padStart(2, "0")}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3 flex gap-3">
+        <div className="h-9 w-9 rounded-full bg-linear-to-tr from-primary to-blue-600 shrink-0" />
+        <div className="flex flex-col overflow-hidden">
+          <h3 className="text-sm font-semibold leading-tight line-clamp-2 text-foreground group-hover:text-primary transition-colors">
+            Transcoded Video #{video.id.slice(0, 8)}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Antigravity Studio
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {formatDistanceToNow(new Date(video.createdAt), { addSuffix: true })}
+          </p>
+        </div>
+      </div>
+    </Link>
+  );
+};
 
 const VideoPage = () => {
   const [videos, setVideos] = useState<Video[]>([]);
@@ -91,62 +173,7 @@ const VideoPage = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {videos.map((video) => (
-              <Link key={video.id} href={`/video/${video.id}`} className="group relative block">
-                {/* Custom Gradient Thumbnail */}
-                <div className="aspect-video w-full overflow-hidden rounded-xl bg-linear-to-br from-zinc-800 to-zinc-950 border border-border shadow-md transition-all duration-300 group-hover:scale-[1.02] group-hover:shadow-xl group-hover:border-primary/50 relative">
-                  
-                  {/* Poster Image */}
-                  {video.thumbnails && video.thumbnails.length > 0 && (
-                    <Image 
-                      src={video.thumbnails[0]} 
-                      alt="Video Poster" 
-                      className="absolute inset-0 w-full h-full object-cover" 
-                      fill
-                      blurDataURL={video.blurDataUrls?.[0]}
-                      placeholder="blur"
-                    />
-                  )}
-
-                  {/* Play Button Overlay */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-black/40 backdrop-blur-[2px]">
-                    <div className="bg-primary/90 rounded-full p-4 transform translate-y-4 transition-transform duration-300 group-hover:translate-y-0 shadow-lg">
-                      <Play className="h-6 w-6 text-primary-foreground fill-current ml-1" />
-                    </div>
-                  </div>
-
-                  {/* Duration Badge */}
-                  {video.duration && (
-                    <div className="absolute bottom-2 right-2 bg-black/80 px-2 py-1 text-xs font-medium text-white rounded shadow-sm backdrop-blur-md">
-                      {Math.floor(parseFloat(video.duration) / 60)}:
-                      {Math.floor(parseFloat(video.duration) % 60).toString().padStart(2, "0")}
-                    </div>
-                  )}
-                  
-                  {/* Resolution Badges */}
-                  {/* <div className="absolute top-2 left-2 flex gap-1">
-                    {video.resolutions?.map((res) => (
-                      <span key={res} className="bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white rounded uppercase tracking-wider backdrop-blur-md border border-white/10">
-                        {res}
-                      </span>
-                    ))}
-                  </div> */}
-                </div>
-
-                <div className="mt-3 flex gap-3">
-                  <div className="h-9 w-9 rounded-full bg-linear-to-tr from-primary to-blue-600 shrink-0" />
-                  <div className="flex flex-col overflow-hidden">
-                    <h3 className="text-sm font-semibold leading-tight line-clamp-2 text-foreground group-hover:text-primary transition-colors">
-                      Transcoded Video #{video.id.slice(0, 8)}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Antigravity Studio
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDistanceToNow(new Date(video.createdAt), { addSuffix: true })}
-                    </p>
-                  </div>
-                </div>
-              </Link>
+              <VideoCard key={video.id} video={video} />
             ))}
           </div>
         )}

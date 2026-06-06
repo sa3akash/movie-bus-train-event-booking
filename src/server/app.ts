@@ -15,7 +15,9 @@ import { uploadModule } from "./modules/upload";
 import { videoModule } from "./modules/video";
 import { adsModule } from "./modules/ads";
 import { openapi } from "@elysia/openapi";
-import "./queue/transcode.worker";
+import "./queue/workers/analyze.worker";
+import "./queue/workers/transcode.worker";
+import "./queue/workers/package-upload.worker";
 
 export const app = new Elysia({ prefix: "/api", aot: true })
   .use(

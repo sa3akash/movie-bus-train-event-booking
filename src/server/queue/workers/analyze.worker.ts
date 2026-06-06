@@ -1,31 +1,21 @@
 import { Worker, Job } from "bullmq";
-import Redis from "ioredis";
 import fs from "fs/promises";
 import path from "path";
 import os from "os";
-import { db } from "../db";
-import { videos } from "../db/schemas/video";
+import { db } from "../../db";
+import { videos } from "../../db/schemas/video";
 import { eq } from "drizzle-orm";
-import { downloadFromS3, uploadDirectoryToS3, bucket } from "./transcoder/s3";
-import { probeVideo, getTargetResolutions, extractAudio, transcodeResolution, generateThumbnails, generateStoryboardSprite, getThumbnailTimestamps, generateStoryboardVtt, generateBlurData } from "./transcoder/ffmpeg";
-import { runShakaPackager } from "./transcoder/shaka";
+import { downloadFromS3 } from "../transcoder/s3";
+import { probeVideo, getTargetResolutions, extractAudio, generateThumbnails, generateStoryboardSprite, getThumbnailTimestamps, generateStoryboardVtt, generateBlurData } from "../transcoder/ffmpeg";
+import { redisConnection, flowProducer } from "../index";
 
-const redisConnection = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
-  maxRetriesPerRequest: null,
-});
-
-const globalForWorker = globalThis as unknown as {
-  transcodeWorker: Worker | undefined;
-};
-
-export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
-  "video-transcode",
+export const analyzeWorker = new Worker(
+  "video-analyze",
   async (job: Job) => {
     const { videoId, s3Key } = job.data;
     const workDir = path.join(os.tmpdir(), `transcode-${videoId}`);
     const originalPath = path.join(workDir, "original.mp4");
     const outputDir = path.join(workDir, "output");
-
 
     try {
       await db.update(videos).set({ status: "PROCESSING" }).where(eq(videos.id, videoId));
@@ -64,20 +54,16 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
       const interval = Math.max(1, Math.min(10, Math.floor(durationFloat / 100)));
       const totalTiles = Math.ceil(durationFloat / interval);
       
-      // Dynamically calculate grid to minimize black space
       let columns = Math.ceil(Math.sqrt(totalTiles));
       if (columns > 10) columns = 10;
       let rows = Math.ceil(totalTiles / columns);
-      // Cap rows so the image doesn't exceed 16383px height limit
       if (rows > 100) rows = 100;
-      // In case totalTiles is 0 (extremely short/empty video), fallback safely
       if (columns === 0) columns = 1;
       if (rows === 0) rows = 1;
       
       let videoWidth = videoStream?.width || 1280;
       let videoHeight = videoStream?.height || 720;
       
-      // Handle mobile video rotation metadata (Reels/TikToks)
       const rotation = videoStream?.tags?.rotate || videoStream?.tags?.ROTATE;
       if (rotation === '90' || rotation === '270' || rotation === '-90') {
         const temp = videoWidth;
@@ -112,82 +98,45 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
 
       // Step 3: Extract Audio
       job.log("Extracting audio stream...");
-      await job.updateProgress(5);
+      await job.updateProgress(50);
       const audioPath = path.join(workDir, `audio.mp4`);
       await extractAudio(originalPath, audioPath);
-      await job.updateProgress(10);
-
-      // Step 4: Transcode Video Resolutions
-      const generatedResolutions: string[] = [];
-      let currentResIndex = 0;
-      for (const res of targetRes) {
-        job.log(`Transcoding ${res.name}...`);
-        const outPath = path.join(workDir, `video_${res.name}.mp4`);
-        
-        await transcodeResolution(originalPath, outPath, res, (percent) => {
-          const fractionPerRes = 80 / targetRes.length;
-          const completedResProgress = currentResIndex * fractionPerRes;
-          const currentResProgress = (percent / 100) * fractionPerRes;
-          const totalProgress = 10 + completedResProgress + currentResProgress;
-          if (!isNaN(totalProgress)) {
-            job.updateProgress(Math.min(90, Math.round(totalProgress))).catch(() => {});
-          }
-        });
-        
-        generatedResolutions.push(res.name);
-        currentResIndex++;
-      }
-      await job.updateProgress(90);
-
-      // Step 5: Package with Shaka
-      job.log("Running Shaka Packager to generate DASH and HLS...");
-      await runShakaPackager(audioPath, workDir, outputDir, targetRes);
-
-      // Step 6: Upload to S3
-      job.log("Uploading HLS/DASH outputs to Minio...");
-      await job.updateProgress(95);
-      const s3Prefix = `videos/processed/${videoId}`;
-      await uploadDirectoryToS3(outputDir, s3Prefix);
-
-      // Step 7: Update DB
-      const publicEndpoint = process.env.MINIO_PUBLIC_URL;
-      await db.update(videos).set({
-        status: "COMPLETED",
-        hlsUrl: `${publicEndpoint}/${bucket}/${s3Prefix}/master.m3u8`,
-        dashUrl: `${publicEndpoint}/${bucket}/${s3Prefix}/manifest.mpd`,
-        resolutions: generatedResolutions,
-        thumbnails: thumbnailFiles.map(f => `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/${path.basename(f)}`),
-        blurhashes,
-        blurDataUrls,
-        storyboardUrl: `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/storyboard-medium.vtt`,
-        storyboards: {
-          high: `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/storyboard-high.vtt`,
-          medium: `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/storyboard-medium.vtt`,
-          low: `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/storyboard-low.vtt`,
-        },
-        duration,
-      }).where(eq(videos.id, videoId));
-
-      job.log("Transcoding job completed successfully.");
       await job.updateProgress(100);
+
+      // Step 4: Dispatch Flow for Transcode + Package
+      job.log("Dispatching transcode and package jobs...");
+      
+      await flowProducer.add({
+        name: "package-upload",
+        queueName: "video-package-upload",
+        data: {
+          videoId,
+          s3Key,
+          workDir,
+          outputDir,
+          targetRes,
+          duration,
+          thumbnailFiles,
+          blurhashes,
+          blurDataUrls
+        },
+        opts: { jobId: `package-${videoId}` },
+        children: targetRes.map(res => ({
+          name: `transcode-${res.name}`,
+          queueName: "video-transcode",
+          data: { videoId, workDir, originalPath, res },
+          opts: { jobId: `transcode-${videoId}-${res.name}` }
+        }))
+      });
+
     } catch (error: any) {
-      console.error("Transcode Job Failed:", error);
+      console.error("Analyze Job Failed:", error);
       await db.update(videos).set({
         status: "FAILED",
         error: error.message || String(error),
       }).where(eq(videos.id, videoId));
       throw error;
-    } finally {
-      try {
-        await fs.rm(workDir, { recursive: true, force: true });
-      } catch (err) {
-        console.error("Failed to cleanup temp dir:", err);
-      }
     }
   },
-  { connection: redisConnection, concurrency: 1 }
+  { connection: redisConnection, concurrency: 2 }
 );
-
-if (process.env.NODE_ENV !== "production") {
-  globalForWorker.transcodeWorker = transcodeWorker;
-}
