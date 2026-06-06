@@ -9,6 +9,8 @@ export const videos = pgTable("videos", {
   originalUrl: text("original_url").notNull(),
   status: varchar("status", { length: 32 }).notNull().default("PENDING"), // PENDING, PROCESSING, COMPLETED, FAILED
   resolutions: jsonb("resolutions").$type<string[]>(),
+  thumbnails: jsonb("thumbnails").$type<string[]>(),
+  storyboardUrl: text("storyboard_url"),
   hlsUrl: text("hls_url"),
   dashUrl: text("dash_url"),
   duration: varchar("duration", { length: 32 }),

@@ -11,11 +11,14 @@ const formatTime = (seconds: number) => {
 };
 
 export const TimeDisplay = () => {
-  const { currentTime, duration } = useAdvancedPlayer();
+  const { currentTime, duration, isAdPlaying, adCurrentTime, adDuration } = useAdvancedPlayer();
+
+  const displayTime = isAdPlaying ? adCurrentTime : currentTime;
+  const displayDuration = isAdPlaying ? adDuration : duration;
 
   return (
     <div className="text-white/80 text-sm font-medium tracking-wide font-mono pointer-events-none select-none">
-      {formatTime(currentTime)} <span className="opacity-50">/</span> {formatTime(duration)}
+      {formatTime(displayTime)} <span className="opacity-50">/</span> {formatTime(displayDuration)}
     </div>
   );
 };

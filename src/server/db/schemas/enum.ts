@@ -101,5 +101,6 @@ export const adCategoryEnum = pgEnum("ad_category", [
   "PRE_ROLL",
   "MID_ROLL",
   "POST_ROLL",
+  "ANY",
 ]);
 

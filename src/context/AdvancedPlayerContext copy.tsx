@@ -22,8 +22,6 @@ interface AdvancedPlayerContextType {
   adTimeRemaining: number;
   adTimeUntilSkippable: number;
   adTitle: string;
-  adCurrentTime: number;
-  adDuration: number;
   
   // Actions
   togglePlay: () => void;
@@ -62,8 +60,6 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
   const [adTimeRemaining, setAdTimeRemaining] = useState(0);
   const [adTimeUntilSkippable, setAdTimeUntilSkippable] = useState(0);
   const [adTitle, setAdTitle] = useState("");
-  const [adCurrentTime, setAdCurrentTime] = useState(0);
-  const [adDuration, setAdDuration] = useState(0);
   const currentAdRef = useRef<any>(null);
 
   const skipAd = useCallback(() => {
@@ -249,8 +245,6 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
       setCanSkipAd(false);
       setAdTimeRemaining(0);
       setAdTimeUntilSkippable(0);
-      setAdCurrentTime(0);
-      setAdDuration(0);
       adContainer.style.pointerEvents = 'none';
       
       // Sync back UI to the main video explicitly
@@ -402,9 +396,6 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
             currentAdDuration = videoRef.current.duration || 0;
           }
 
-          setAdCurrentTime(currentAdTime);
-          setAdDuration(currentAdDuration);
-
           if (typeof ad.getRemainingTime === 'function') {
             const r = ad.getRemainingTime();
             setAdTimeRemaining(isNaN(r) ? 0 : Math.max(0, r));
@@ -481,8 +472,6 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
         adTimeRemaining,
         adTimeUntilSkippable,
         adTitle,
-        adCurrentTime,
-        adDuration,
         togglePlay,
         seek,
         setVolume,

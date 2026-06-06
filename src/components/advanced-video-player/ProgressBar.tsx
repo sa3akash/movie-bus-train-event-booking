@@ -4,12 +4,14 @@ import React, { useRef, useState, useEffect } from "react";
 import { useAdvancedPlayer } from "@/context/AdvancedPlayerContext";
 
 export const ProgressBar = () => {
-  const { currentTime, duration, seek, isAdPlaying } = useAdvancedPlayer();
+  const { currentTime, duration, seek, isAdPlaying, adCurrentTime, adDuration } = useAdvancedPlayer();
   const progressBarRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [hoverPosition, setHoverPosition] = useState<number | null>(null);
 
-  const percentage = duration > 0 ? (currentTime / duration) * 100 : 0;
+  const displayTime = isAdPlaying ? adCurrentTime : currentTime;
+  const displayDuration = isAdPlaying ? adDuration : duration;
+  const percentage = displayDuration > 0 ? (displayTime / displayDuration) * 100 : 0;
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (isAdPlaying) return;
@@ -78,7 +80,7 @@ export const ProgressBar = () => {
         style={{ width: `${percentage}%` }}
       >
         {/* Scrubber Knob */}
-        <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow transition-transform ${isDragging ? 'scale-125' : 'scale-0 group-hover:scale-100'} translate-x-1/2`} />
+        <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow transition-transform ${isDragging ? 'scale-125' : (isAdPlaying ? 'scale-0' : 'scale-0 group-hover:scale-100')} translate-x-1/2`} />
       </div>
     </div>
   );

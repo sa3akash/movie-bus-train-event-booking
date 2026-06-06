@@ -1,0 +1,1 @@
+ALTER TYPE "public"."ad_category" ADD VALUE 'ANY';

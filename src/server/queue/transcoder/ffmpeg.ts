@@ -1,6 +1,7 @@
 import ffmpeg from "fluent-ffmpeg";
 import { Job } from "bullmq";
 import path from "path";
+import fs from "fs/promises";
 
 export interface TargetResolution {
   name: string;
@@ -75,4 +76,98 @@ export function transcodeResolution(
       .on("error", (err) => reject(err))
       .run();
   });
+}
+
+export function getThumbnailTimestamps(count: number): string[] {
+  const timestamps: string[] = [];
+  const interval = 100 / (count + 1);
+  for (let i = 1; i <= count; i++) {
+    timestamps.push(`${Math.floor(interval * i)}%`);
+  }
+  return timestamps;
+}
+
+export function generateThumbnails(originalPath: string, outputDir: string, timestamps: string[]): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    let generatedFiles: string[] = [];
+    ffmpeg(originalPath)
+      .on("filenames", (filenames) => {
+        generatedFiles = filenames;
+      })
+      .on("end", () => resolve(generatedFiles))
+      .on("error", (err) => reject(err))
+      .screenshots({
+        timestamps,
+        folder: outputDir,
+        filename: "thumbnail-%i.png",
+      });
+  });
+}
+
+export function generateStoryboardSprite(
+  originalPath: string,
+  outputPattern: string,
+  intervalSeconds: number = 10,
+  tileWidth: number = 160,
+  tileHeight: number = 90,
+  columns: number = 10,
+  rows: number = 10
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    ffmpeg(originalPath)
+      .outputOptions([
+        `-vf fps=1/${intervalSeconds},scale=${tileWidth}:${tileHeight},tile=${columns}x${rows}`
+      ])
+      .output(outputPattern)
+      .on("end", () => resolve())
+      .on("error", (err) => reject(err))
+      .run();
+  });
+}
+
+// Format time for VTT: HH:MM:SS.mmm
+function formatVttTime(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  const ms = Math.floor((seconds % 1) * 1000);
+  
+  const pad = (n: number, len: number = 2) => String(n).padStart(len, "0");
+  return `${pad(h)}:${pad(m)}:${pad(s)}.${pad(ms, 3)}`;
+}
+
+export async function generateStoryboardVtt(
+  durationSeconds: number,
+  intervalSeconds: number,
+  columns: number,
+  rows: number,
+  tileWidth: number,
+  tileHeight: number,
+  vttPath: string,
+  spriteUrlPrefix: string
+): Promise<void> {
+  const tilesPerImage = columns * rows;
+  let vttContent = "WEBVTT\n\n";
+
+  for (let time = 0; time < durationSeconds; time += intervalSeconds) {
+    const tileIndex = Math.floor(time / intervalSeconds);
+    const imageIndex = Math.floor(tileIndex / tilesPerImage) + 1; // 1-indexed for %04d
+    const indexInImage = tileIndex % tilesPerImage;
+    
+    const col = indexInImage % columns;
+    const row = Math.floor(indexInImage / columns);
+    
+    const x = col * tileWidth;
+    const y = row * tileHeight;
+    
+    const startTime = formatVttTime(time);
+    const endTime = formatVttTime(Math.min(time + intervalSeconds, durationSeconds));
+    
+    const imageName = `${spriteUrlPrefix}-${String(imageIndex).padStart(4, "0")}.jpg`;
+    
+    vttContent += `${startTime} --> ${endTime}\n`;
+    vttContent += `${imageName}#xywh=${x},${y},${tileWidth},${tileHeight}\n\n`;
+  }
+
+  await fs.writeFile(vttPath, vttContent, "utf-8");
 }

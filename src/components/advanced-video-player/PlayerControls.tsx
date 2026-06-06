@@ -6,7 +6,7 @@ import { VolumeControl } from "./VolumeControl";
 import { TimeDisplay } from "./TimeDisplay";
 import { ProgressBar } from "./ProgressBar";
 import { useAdvancedPlayer } from "@/context/AdvancedPlayerContext";
-import { Maximize, Minimize } from "lucide-react";
+import { Maximize, Minimize, Settings } from "lucide-react";
 
 export const PlayerControls = () => {
   const { toggleFullscreen, isFullscreen, isAdPlaying } = useAdvancedPlayer();
@@ -22,12 +22,18 @@ export const PlayerControls = () => {
         {/* Left Side: Playback, Volume, Time */}
         <div className="flex items-center gap-4">
           <PlaybackButtons />
-          {!isAdPlaying && <VolumeControl />}
-          {!isAdPlaying && <TimeDisplay />}
+          <VolumeControl />
+          <TimeDisplay />
         </div>
 
         {/* Right Side: Fullscreen, Settings */}
         <div className="flex items-center gap-4">
+          <button
+            className="p-1.5 text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/10"
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
+          </button>
           <button
             onClick={toggleFullscreen}
             className="p-1.5 text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/10"
