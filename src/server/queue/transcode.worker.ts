@@ -61,12 +61,6 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
       const blurhashes = blurDataResults.map(d => d.blurhash);
       const blurDataUrls = blurDataResults.map(d => d.blurDataUrl);
       
-      const storyboardPrefix = "storyboard";
-      // Ensure forward slashes for ffmpeg image2 pattern to prevent \t escaping issues on Windows
-      // Use .jpg for stability and performance on large grids, combined with high quality options
-      const storyboardPattern = path.join(thumbnailsDir, `${storyboardPrefix}-%04d.jpg`).replace(/\\/g, "/");
-      const vttPath = path.join(thumbnailsDir, "storyboard.vtt");
-      
       const interval = Math.max(1, Math.min(10, Math.floor(durationFloat / 100)));
       const totalTiles = Math.ceil(durationFloat / interval);
       
@@ -74,7 +68,7 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
       let columns = Math.ceil(Math.sqrt(totalTiles));
       if (columns > 10) columns = 10;
       let rows = Math.ceil(totalTiles / columns);
-      // Cap rows so the image doesn't exceed 16383px height limit (WebP max dimension)
+      // Cap rows so the image doesn't exceed 16383px height limit
       if (rows > 100) rows = 100;
       // In case totalTiles is 0 (extremely short/empty video), fallback safely
       if (columns === 0) columns = 1;
@@ -93,18 +87,28 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
 
       const aspectRatio = videoWidth / videoHeight;
       
-      // Increased tile dimensions for better clarity
-      let tileWidth = 256;
-      let tileHeight = Math.round(256 / aspectRatio / 2) * 2; // ensure even number
-      
-      // Strict bounding box: never exceed 256px width or 144px height!
-      if (tileHeight > 144) {
-        tileHeight = 144;
-        tileWidth = Math.round(144 * aspectRatio / 2) * 2; // ensure even number
-      }
+      const storyboardQualities = [
+        { name: "high", width: 320, height: 180 },
+        { name: "medium", width: 256, height: 144 },
+        { name: "low", width: 160, height: 90 }
+      ];
 
-      await generateStoryboardSprite(originalPath, storyboardPattern, interval, tileWidth, tileHeight, columns, rows);
-      await generateStoryboardVtt(durationFloat, interval, columns, rows, tileWidth, tileHeight, vttPath, storyboardPrefix);
+      for (const quality of storyboardQualities) {
+        const storyboardPrefix = `storyboard-${quality.name}`;
+        const storyboardPattern = path.join(thumbnailsDir, `${storyboardPrefix}-%04d.jpg`).replace(/\\/g, "/");
+        const vttPath = path.join(thumbnailsDir, `${storyboardPrefix}.vtt`);
+
+        let tileWidth = quality.width;
+        let tileHeight = Math.round(quality.width / aspectRatio / 2) * 2;
+        
+        if (tileHeight > quality.height) {
+          tileHeight = quality.height;
+          tileWidth = Math.round(quality.height * aspectRatio / 2) * 2;
+        }
+
+        await generateStoryboardSprite(originalPath, storyboardPattern, interval, tileWidth, tileHeight, columns, rows);
+        await generateStoryboardVtt(durationFloat, interval, columns, rows, tileWidth, tileHeight, vttPath, storyboardPrefix);
+      }
 
       // Step 3: Extract Audio
       job.log("Extracting audio stream...");
@@ -155,7 +159,12 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
         thumbnails: thumbnailFiles.map(f => `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/${path.basename(f)}`),
         blurhashes,
         blurDataUrls,
-        storyboardUrl: `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/storyboard.vtt`,
+        storyboardUrl: `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/storyboard-medium.vtt`,
+        storyboards: {
+          high: `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/storyboard-high.vtt`,
+          medium: `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/storyboard-medium.vtt`,
+          low: `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/storyboard-low.vtt`,
+        },
         duration,
       }).where(eq(videos.id, videoId));
 

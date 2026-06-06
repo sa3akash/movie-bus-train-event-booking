@@ -86,7 +86,7 @@ const PlayerInner = (props: AdvancedVideoPlayerProps) => {
         }`}
       >
         {/* Subtle top gradient for visibility if needed */}
-        <div className="absolute top-0 left-0 right-0 h-24 bg-gradient-to-b from-black/60 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-24 bg-linear-to-b from-black/60 to-transparent pointer-events-none" />
         
         {/* Main Controls at bottom */}
         <PlayerControls />

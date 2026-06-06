@@ -27,6 +27,7 @@ interface VideoData {
   resolutions: string[] | null;
   thumbnails: string[] | null;
   storyboardUrl: string | null;
+  storyboards?: { high?: string; medium?: string; low?: string } | null;
   blurhashes: string[] | null;
   blurDataUrls: string[] | null;
 }
@@ -40,6 +41,7 @@ const VideoPlayerPage = () => {
   const [playerInstance, setPlayerInstance] = useState<any>(null);
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [manifestUrl, setManifestUrl] = useState<string | null>(null);
+  const [effectiveStoryboardUrl, setEffectiveStoryboardUrl] = useState<string | undefined>(undefined);
 
   const { downloads, isInitialized } = useShakaContext();
 
@@ -64,6 +66,42 @@ const VideoPlayerPage = () => {
         setLoading(false);
       });
   }, [params.id]);
+
+  useEffect(() => {
+    if (!video) return;
+
+    const updateStoryboard = () => {
+      let url = video.storyboardUrl || undefined;
+      
+      if (video.storyboards) {
+        // Modern browsers support navigator.connection
+        const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+        if (conn && conn.effectiveType) {
+          if (conn.effectiveType === '5g' || conn.effectiveType === '4g') {
+            url = video.storyboards.high || url;
+          } else if (conn.effectiveType === 'slow-4g' || conn.effectiveType === '3g') {
+            url = video.storyboards.medium || url;
+          } else {
+            url = video.storyboards.low || url;
+          }
+        } else {
+          // Fallback if network info is not available
+          url = video.storyboards.high || url;
+        }
+      }
+      
+      setEffectiveStoryboardUrl(url);
+    };
+
+    updateStoryboard();
+
+    // Listen for network changes (e.g. toggling throttling in DevTools)
+    const connection = (navigator as any).connection;
+    if (connection) {
+      connection.addEventListener('change', updateStoryboard);
+      return () => connection.removeEventListener('change', updateStoryboard);
+    }
+  }, [video]);
 
   // Check if video is downloaded and resolve the manifestUrl
   useEffect(() => {
@@ -93,6 +131,7 @@ const VideoPlayerPage = () => {
             resolutions: ["OFFLINE"],
             thumbnails: null,
             storyboardUrl: null,
+            storyboards: null,
             blurhashes: null,
             blurDataUrls: null,
           });
@@ -171,7 +210,7 @@ const VideoPlayerPage = () => {
               videoId={params.id as string}
               posterUrl={video.thumbnails?.[0]}
               blurDataUrl={video.blurDataUrls?.[0]}
-              storyboardUrl={video.storyboardUrl || undefined}
+              storyboardUrl={effectiveStoryboardUrl}
               ads={{ requestUrl: `/api/ads?videoId=${params.id}` }}
             />
           </div>

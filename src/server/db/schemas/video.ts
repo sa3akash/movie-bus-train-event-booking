@@ -13,6 +13,7 @@ export const videos = pgTable("videos", {
   blurhashes: jsonb("blurhashes").$type<string[]>(),
   blurDataUrls: jsonb("blur_data_urls").$type<string[]>(),
   storyboardUrl: text("storyboard_url"),
+  storyboards: jsonb("storyboards").$type<{high?: string, medium?: string, low?: string}>(),
   hlsUrl: text("hls_url"),
   dashUrl: text("dash_url"),
   duration: varchar("duration", { length: 32 }),
