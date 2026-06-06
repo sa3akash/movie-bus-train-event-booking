@@ -40,10 +40,15 @@ const PlayerInner = (props: AdvancedVideoPlayerProps) => {
     e.preventDefault();
     const rect = containerRef.current?.getBoundingClientRect();
     if (rect) {
-      setContextMenu({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
+      const menuWidth = 240;
+      const menuHeight = 200;
+      let x = e.clientX - rect.left;
+      let y = e.clientY - rect.top;
+
+      if (x + menuWidth > rect.width) x = rect.width - menuWidth - 8;
+      if (y + menuHeight > rect.height) y = rect.height - menuHeight - 8;
+      
+      setContextMenu({ x: Math.max(8, x), y: Math.max(8, y) });
     }
   };
 
@@ -203,26 +208,44 @@ const PlayerInner = (props: AdvancedVideoPlayerProps) => {
 
       {/* Context Menu */}
       {contextMenu && (
-        <div 
-          className="absolute z-100 bg-black/90 border border-white/10 rounded-md shadow-2xl py-2 min-w-[240px] text-[13px] pointer-events-auto backdrop-blur-md"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <button 
-            className="w-full flex items-center justify-between text-left px-4 py-1.5 hover:bg-white/10 text-white/90 transition-colors"
-            onClick={() => {
-              if (videoRef.current) {
-                videoRef.current.loop = !videoRef.current.loop;
-              }
-              setContextMenu(null);
-            }}
+        <>
+          {/* Mobile Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/60 z-[90] md:hidden backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={() => setContextMenu(null)}
+          />
+
+          <div 
+            className="
+              fixed bottom-0 left-0 right-0 w-full z-[100]
+              md:absolute md:w-auto md:bottom-auto md:left-auto md:right-auto
+              bg-zinc-950 md:bg-black/90 md:border border-white/10 rounded-t-2xl md:rounded-md shadow-2xl py-2 md:py-2 min-w-[240px] text-[13px] md:text-[13px] text-base pointer-events-auto md:backdrop-blur-md
+              animate-in slide-in-from-bottom-8 md:slide-in-from-bottom-0 duration-300
+            "
+            style={typeof window !== 'undefined' && window.innerWidth >= 768 ? { left: contextMenu.x, top: contextMenu.y } : undefined}
+            onClick={(e) => e.stopPropagation()}
           >
+            {/* Mobile Handle */}
+            <div className="w-full flex justify-center pb-2 md:hidden">
+              <div className="w-10 h-1.5 bg-white/20 rounded-full" />
+            </div>
+
+            <div className="flex flex-col max-h-[50vh] overflow-y-auto overscroll-contain">
+              <button 
+                className="w-full flex items-center justify-between text-left px-4 py-3 md:py-1.5 hover:bg-white/10 text-white/90 transition-colors"
+                onClick={() => {
+                  if (videoRef.current) {
+                    videoRef.current.loop = !videoRef.current.loop;
+                  }
+                  setContextMenu(null);
+                }}
+              >
             <span>Loop</span>
             {videoRef.current?.loop && <span className="text-white/60">✓</span>}
           </button>
           
           <button 
-            className="w-full text-left px-4 py-1.5 hover:bg-white/10 text-white/90 transition-colors"
+            className="w-full text-left px-4 py-3 md:py-1.5 hover:bg-white/10 text-white/90 transition-colors"
             onClick={() => {
               navigator.clipboard.writeText(window.location.href);
               setContextMenu(null);
@@ -232,7 +255,7 @@ const PlayerInner = (props: AdvancedVideoPlayerProps) => {
           </button>
           
           <button 
-            className="w-full text-left px-4 py-1.5 hover:bg-white/10 text-white/90 transition-colors"
+            className="w-full text-left px-4 py-3 md:py-1.5 hover:bg-white/10 text-white/90 transition-colors"
             onClick={() => {
               const url = new URL(window.location.href);
               url.searchParams.set('t', Math.round(currentTime).toString());
@@ -246,7 +269,7 @@ const PlayerInner = (props: AdvancedVideoPlayerProps) => {
           <div className="h-[1px] bg-white/10 my-1.5 mx-2" />
           
           <button 
-            className="w-full text-left px-4 py-1.5 hover:bg-white/10 text-white/90 transition-colors"
+            className="w-full text-left px-4 py-3 md:py-1.5 hover:bg-white/10 text-white/90 transition-colors"
             onClick={() => {
               alert("Playback logs collected. Please send them to support.");
               setContextMenu(null);
@@ -255,17 +278,19 @@ const PlayerInner = (props: AdvancedVideoPlayerProps) => {
             Troubleshoot playback issue
           </button>
 
-          <button 
-            className="w-full flex items-center justify-between text-left px-4 py-1.5 hover:bg-white/10 text-white/90 transition-colors"
-            onClick={() => {
-              setShowStats(!showStats);
-              setContextMenu(null);
-            }}
-          >
-            <span>Stats for nerds</span>
-            {showStats && <span className="text-white/60">✓</span>}
-          </button>
-        </div>
+            <button 
+              className="w-full flex items-center justify-between text-left px-4 py-3 md:py-1.5 hover:bg-white/10 text-white/90 transition-colors"
+              onClick={() => {
+                setShowStats(!showStats);
+                setContextMenu(null);
+              }}
+            >
+              <span>Stats for nerds</span>
+              {showStats && <span className="text-white/60">✓</span>}
+            </button>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Stats Overlay */}

@@ -159,13 +159,14 @@ export const ProgressBar = () => {
 
   return (
     <div 
-      className={`relative w-full h-1.5 bg-white/20 rounded-full group transition-all duration-200 ${isAdPlaying || (isLiveState && !isDVR) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:h-2'}`}
+      className={`relative w-full py-3 group -my-3 touch-none ${isAdPlaying || (isLiveState && !isDVR) ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
       ref={progressBarRef}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
     >
+      <div className="relative w-full h-1.5 bg-white/20 rounded-full transition-all duration-200 group-hover:h-2">
       {/* Hover preview bar and thumbnail */}
       {!isAdPlaying && hoverPosition !== null && (
         <>
@@ -183,7 +184,7 @@ export const ProgressBar = () => {
           >
             {thumbnailUrl && (
               <div 
-                className="bg-black rounded overflow-hidden shadow-lg border border-white/20"
+                className="hidden md:block bg-black rounded overflow-hidden shadow-lg border border-white/20"
                 style={{
                   transform: `scale(${thumbScale})`,
                   transformOrigin: "bottom center"
@@ -272,6 +273,7 @@ export const ProgressBar = () => {
       >
         {/* Scrubber Knob */}
         <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow transition-transform ${isDragging ? 'scale-125' : (isAdPlaying || (isLiveState && !isDVR) ? 'scale-0' : 'scale-0 group-hover:scale-100')} translate-x-1/2`} />
+      </div>
       </div>
     </div>
   );

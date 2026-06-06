@@ -80,14 +80,34 @@ export const SettingsMenu = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 mb-4 w-64 bg-black/90 backdrop-blur-md border border-white/10 rounded-xl overflow-hidden shadow-2xl z-50 text-sm font-medium text-white/90">
+        <>
+          {/* Mobile Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/60 z-90 md:hidden backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={() => {
+              setIsOpen(false);
+              setTimeout(() => setMenuState("main"), 200);
+            }}
+          />
+
+          <div className="
+            fixed bottom-0 left-0 right-0 z-[100] w-full max-h-[60vh] flex flex-col
+            bg-zinc-950 md:bg-black/90 md:backdrop-blur-md border-t md:border border-white/10 rounded-t-2xl md:rounded-xl
+            md:absolute md:bottom-full md:left-auto md:right-0 md:mb-4 md:w-64 md:h-auto md:max-h-none
+            shadow-2xl overflow-hidden text-sm font-medium text-white/90 
+            animate-in slide-in-from-bottom-8 md:slide-in-from-bottom-2 duration-300
+          ">
+            {/* Mobile Handle */}
+            <div className="w-full flex justify-center pt-3 pb-1 md:hidden shrink-0">
+              <div className="w-10 h-1.5 bg-white/20 rounded-full" />
+            </div>
           
           {/* Main Menu */}
           {menuState === "main" && (
             <div className="flex flex-col py-2 animate-in fade-in zoom-in-95 duration-200">
               <button
                 onClick={() => setMenuState("quality")}
-                className="flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors"
+                className="flex items-center justify-between px-4 py-3.5 hover:bg-white/10 transition-colors"
               >
                 <span>Quality</span>
                 <div className="flex items-center text-white/50">
@@ -98,7 +118,7 @@ export const SettingsMenu = () => {
 
               <button
                 onClick={() => setMenuState("speed")}
-                className="flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors"
+                className="flex items-center justify-between px-4 py-3.5 hover:bg-white/10 transition-colors"
               >
                 <span>Playback speed</span>
                 <div className="flex items-center text-white/50">
@@ -148,7 +168,7 @@ export const SettingsMenu = () => {
                 <span>Quality</span>
               </button>
               
-              <div className="max-h-60 overflow-y-auto">
+              <div className="max-h-[50vh] md:max-h-60 overflow-y-auto overscroll-contain">
                 <button
                   onClick={() => {
                     selectTrack(null);
@@ -194,7 +214,7 @@ export const SettingsMenu = () => {
                 <span>Playback speed</span>
               </button>
               
-              <div className="max-h-60 overflow-y-auto">
+              <div className="max-h-[50vh] md:max-h-60 overflow-y-auto overscroll-contain">
                 {speeds.map((speed) => (
                   <button
                     key={speed}
@@ -226,7 +246,7 @@ export const SettingsMenu = () => {
                 <span>Audio track</span>
               </button>
               
-              <div className="max-h-60 overflow-y-auto">
+              <div className="max-h-[50vh] md:max-h-60 overflow-y-auto overscroll-contain">
                 <button
                   onClick={() => {
                     selectAudioLanguage("auto");
@@ -272,7 +292,7 @@ export const SettingsMenu = () => {
                 <span>Subtitles/CC</span>
               </button>
               
-              <div className="max-h-60 overflow-y-auto">
+              <div className="max-h-[50vh] md:max-h-60 overflow-y-auto overscroll-contain">
                 <button
                   onClick={() => {
                     selectTextTrack(null);
@@ -308,6 +328,7 @@ export const SettingsMenu = () => {
           )}
 
         </div>
+        </>
       )}
     </div>
   );
