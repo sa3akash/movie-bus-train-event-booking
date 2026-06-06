@@ -8,10 +8,21 @@ export const ProgressBar = () => {
   const progressBarRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [hoverPosition, setHoverPosition] = useState<number | null>(null);
+  const [hoverTimeValue, setHoverTimeValue] = useState<number>(0);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [thumbnailStyle, setThumbnailStyle] = useState<React.CSSProperties>({});
   const [thumbWidth, setThumbWidth] = useState<number>(160);
   const [thumbScale, setThumbScale] = useState<number>(1);
+
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    }
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
 
   const displayTime = isAdPlaying ? adCurrentTime : currentTime;
   const displayDuration = isAdPlaying ? adDuration : duration;
@@ -37,6 +48,7 @@ export const ProgressBar = () => {
       
       if (duration > 0) {
         const hoverTime = (newPercent / 100) * duration;
+        setHoverTimeValue(hoverTime);
         getThumbnail(hoverTime).then((thumb) => {
           if (thumb) {
             setThumbnailUrl(thumb.uris[0]);
@@ -105,24 +117,35 @@ export const ProgressBar = () => {
             className="absolute top-0 left-0 h-full bg-white/30 rounded-full pointer-events-none"
             style={{ width: `${hoverPosition}%` }}
           />
-          {thumbnailUrl && (
-            <div 
-              className="absolute bottom-4 pointer-events-none bg-black rounded overflow-hidden shadow-lg border border-white/20"
-              style={{ 
-                left: `clamp(${thumbWidth / 2}px, ${hoverPosition}%, calc(100% - ${thumbWidth / 2}px))`,
-                transform: `translateX(-50%) scale(${thumbScale})`,
-                transformOrigin: "bottom center"
-              }}
-            >
-              <div
+          <div 
+            className="absolute bottom-4 pointer-events-none flex flex-col items-center gap-1.5"
+            style={{ 
+              left: `clamp(${thumbWidth / 2}px, ${hoverPosition}%, calc(100% - ${thumbWidth / 2}px))`,
+              transform: `translateX(-50%)`,
+              transformOrigin: "bottom center"
+            }}
+          >
+            {thumbnailUrl && (
+              <div 
+                className="bg-black rounded overflow-hidden shadow-lg border border-white/20"
                 style={{
-                  ...thumbnailStyle,
-                  backgroundImage: `url(${thumbnailUrl})`,
-                  backgroundRepeat: "no-repeat",
+                  transform: `scale(${thumbScale})`,
+                  transformOrigin: "bottom center"
                 }}
-              />
+              >
+                <div
+                  style={{
+                    ...thumbnailStyle,
+                    backgroundImage: `url(${thumbnailUrl})`,
+                    backgroundRepeat: "no-repeat",
+                  }}
+                />
+              </div>
+            )}
+            <div className="bg-black/90 px-2 py-0.5 rounded text-white text-xs font-semibold tracking-wide shadow-md">
+              {formatTime(hoverTimeValue)}
             </div>
-          )}
+          </div>
         </>
       )}
       
