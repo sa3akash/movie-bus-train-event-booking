@@ -1,5 +1,6 @@
 import React from "react";
 import type shaka from "shaka-player";
+import { Chapter } from "./context";
 
 export interface AdvancedVideoPlayerProps {
   // Core Media
@@ -8,7 +9,7 @@ export interface AdvancedVideoPlayerProps {
   posterUrl?: string;
   blurDataUrl?: string;
   storyboardUrl?: string; // .vtt or image sprite
-  
+
   // HTML5 Video Attributes
   autoPlay?: boolean;
   muted?: boolean;
@@ -20,7 +21,7 @@ export interface AdvancedVideoPlayerProps {
 
   // Comprehensive Shaka Player Configuration
   shakaConfig?: shaka.extern.PlayerConfiguration;
-  
+
   // DRM Configuration
   drm?: Partial<shaka.extern.DrmConfiguration>;
 
@@ -40,16 +41,16 @@ export interface AdvancedVideoPlayerProps {
   // Network Filters (License Wrapping, Auth, etc.)
   licenseRequestFilter?: shaka.extern.RequestFilter;
   licenseResponseFilter?: shaka.extern.ResponseFilter;
-  
+
   // Ads Configuration (IMA, MediaTailor, Interstitials)
   ads?: {
     // 1. Custom Interstitials
     customAds?: any[]; // Pass an array of ad objects directly
     requestUrl?: string; // OR provide an API endpoint to fetch them automatically
-    
+
     // 2. Client Side Ad Insertion (IMA)
     adTagUrl?: string; // Simple VAST/VMAP ad tag url using IMA HTML5 SDK
-    
+
     // 3. Server Side Ad Insertion (IMA DAI)
     imaServerSide?: {
       // VOD
@@ -58,15 +59,15 @@ export interface AdvancedVideoPlayerProps {
       // Live
       assetKey?: string;
     };
-    
+
     // 4. AWS Elemental MediaTailor
     mediaTailor?: {
       url: string;
-      type: 'client' | 'server';
+      type: "client" | "server";
       adsParams?: Record<string, any>;
     };
   };
-  
+
   // Event Callbacks
   onPlayerReady?: (player: shaka.Player) => void;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
@@ -76,7 +77,7 @@ export interface AdvancedVideoPlayerProps {
   onError?: (error: shaka.util.Error) => void;
 
   // Fallback Chapters (if not provided by manifest/VTT)
-  chapters?: { id?: string; title: string; startTime: number; endTime: number }[];
+  chapters?: Chapter[];
 }
 
 export interface ParsedThumbnail {
@@ -92,7 +93,7 @@ export interface ParsedThumbnail {
 export interface AdvancedPlayerContextType {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   containerRef: React.RefObject<HTMLDivElement | null>;
-  
+
   // State
   isPlaying: boolean;
   currentTime: number;
@@ -103,28 +104,28 @@ export interface AdvancedPlayerContextType {
   isBuffering: boolean;
   playbackRate: number;
   isPiP: boolean;
-  
+
   // Quality / Tracks
   videoTracks: any[];
   selectedTrackId: string | null;
   activeTrackHeight: number | null;
-  
+
   // Subtitles / Captions
   textTracks: any[];
   selectedTextTrackId: string | null;
   isTextTrackVisible: boolean;
-  
+
   // Audio Languages
   audioLanguages: any[];
   selectedAudioLanguage: string;
-  
+
   // Chapters
   chapters: any[];
-  
+
   // Live
   isLiveState: boolean;
   seekRange: { start: number; end: number };
-  
+
   // Ad State
   isAdPlaying: boolean;
   canSkipAd: boolean;
@@ -133,7 +134,7 @@ export interface AdvancedPlayerContextType {
   adTitle: string;
   adCurrentTime: number;
   adDuration: number;
-  
+
   // Actions
   togglePlay: () => void;
   seek: (time: number) => void;
@@ -147,10 +148,35 @@ export interface AdvancedPlayerContextType {
   initializePlayer: (props: AdvancedVideoPlayerProps) => Promise<void>;
   getThumbnail: (time: number) => Promise<any | null>;
   loadVttStoryboard: (url: string) => Promise<void>;
-  getStats: () => any | null;
+  getStats: () => StatsType | null;
   setCurrentTime: (time: number) => void;
   toggleTextTrackVisibility: () => void;
   selectTextTrack: (trackId: string | null) => void;
   selectAudioLanguage: (language: string) => void;
   goToLive: () => void;
+}
+
+export interface StatsType {
+  height: number;
+  width: number;
+
+  droppedFrames: number;
+  estimatedBandwidth:number;
+  streamBandwidth:number;
+  liveLatency:number;
+
+  loadLatency:number;
+  playTime:number;
+  bufferingTime:number;
+  
+  videoWidth: number;
+  videoHeight: number;
+  playerWidth: number;
+  playerHeight: number;
+  volume: number;
+  muted: boolean;
+  bufferHealth: number;
+  videoCodec: string;
+  audioCodec: string;
+  isLive: boolean;
 }

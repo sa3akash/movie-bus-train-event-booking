@@ -1,10 +1,11 @@
 import { useRef, useCallback, RefObject } from "react";
+import shaka from "shaka-player";
 import { ParsedThumbnail } from "../types";
 
 export function useThumbnails({
   playerRef,
 }: {
-  playerRef: RefObject<any>;
+  playerRef: RefObject<shaka.Player | null>;
 }) {
   const thumbnailsRef = useRef<ParsedThumbnail[]>([]);
 

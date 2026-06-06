@@ -184,7 +184,7 @@ export const ProgressBar = () => {
           >
             {thumbnailUrl && (
               <div 
-                className="hidden md:block bg-black rounded overflow-hidden shadow-lg border border-white/20"
+                className="hidden md:block bg-black rounded-sm overflow-hidden shadow-lg border border-white/20"
                 style={{
                   transform: `scale(${thumbScale})`,
                   transformOrigin: "bottom center"
@@ -272,7 +272,7 @@ export const ProgressBar = () => {
         style={{ width: `${percentage}%` }}
       >
         {/* Scrubber Knob */}
-        <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow transition-transform ${isDragging ? 'scale-125' : (isAdPlaying || (isLiveState && !isDVR) ? 'scale-0' : 'scale-0 group-hover:scale-100')} translate-x-1/2`} />
+        <div className={`absolute z-20 right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow transition-transform ${isDragging ? 'scale-125' : (isAdPlaying || (isLiveState && !isDVR) ? 'scale-0' : 'scale-0 group-hover:scale-100')} translate-x-1/2`} />
       </div>
       </div>
     </div>

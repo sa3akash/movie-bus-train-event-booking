@@ -91,7 +91,7 @@ export const SettingsMenu = () => {
           />
 
           <div className="
-            fixed bottom-0 left-0 right-0 z-[100] w-full max-h-[60vh] flex flex-col
+            fixed bottom-0 left-0 right-0 z-100 w-full max-h-[60vh] flex flex-col
             bg-zinc-950 md:bg-black/90 md:backdrop-blur-md border-t md:border border-white/10 rounded-t-2xl md:rounded-xl
             md:absolute md:bottom-full md:left-auto md:right-0 md:mb-4 md:w-64 md:h-auto md:max-h-none
             shadow-2xl overflow-hidden text-sm font-medium text-white/90 

@@ -1,5 +1,6 @@
 import { useState, useEffect, RefObject } from "react";
 import { AdvancedVideoPlayerProps } from "../types";
+import type shaka from "shaka-player";
 
 export function useVideoState({
   videoRef,
@@ -8,7 +9,7 @@ export function useVideoState({
   isAdPlayingRef,
 }: {
   videoRef: RefObject<HTMLVideoElement | null>;
-  playerRef: RefObject<any>;
+  playerRef: RefObject<shaka.Player | null>;
   propsRef: RefObject<AdvancedVideoPlayerProps | null>;
   isAdPlayingRef: RefObject<boolean>;
 }) {

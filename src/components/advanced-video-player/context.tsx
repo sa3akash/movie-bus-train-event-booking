@@ -11,19 +11,27 @@ import { useVideoTracks } from "./hooks/useVideoTracks";
 import { useThumbnails } from "./hooks/useThumbnails";
 import { useVideoAds } from "./hooks/useVideoAds";
 import { useShakaPlayer } from "./hooks/useShakaPlayer";
+import shaka from "shaka-player";
 
 const AdvancedPlayerContext = createContext<AdvancedPlayerContextType | null>(null);
+
+export interface Chapter {
+  id: string;
+  startTime: number;
+  endTime: number;
+  title: string;
+}
 
 export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) => {
   const { shaka, isSupported } = useShakaContext();
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<shaka.Player | null>(null);
   const propsRef = useRef<AdvancedVideoPlayerProps | null>(null);
   const isAdPlayingRef = useRef(false);
 
-  const [chapters, setChapters] = React.useState<any[]>([]);
+  const [chapters, setChapters] = React.useState<Chapter[]>([]);
 
   // Base Video State
   const videoState = useVideoState({
@@ -150,13 +158,13 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     
     if (playerRef.current) {
       try {
-        const parsedChapters = await playerRef.current.getChaptersAsync();
+        const parsedChapters = await playerRef.current.getChaptersAsync('english');
         if (parsedChapters && parsedChapters.length > 0) {
           setChapters(parsedChapters);
         } else if (props.chapters) {
           setChapters(props.chapters);
         }
-      } catch (e) {
+      } catch {
         if (props.chapters) setChapters(props.chapters);
       }
     }
