@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState, useRef, ReactNod
 import { useShakaContext } from "../../context/ShakaContext";
 import { AdvancedVideoPlayerProps } from "./types";
 
+declare var google: any;
+
 interface AdvancedPlayerContextType {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -45,6 +47,7 @@ interface AdvancedPlayerContextType {
   skipAd: () => void;
   initializePlayer: (props: AdvancedVideoPlayerProps) => Promise<void>;
   getThumbnail: (time: number) => Promise<any | null>;
+  setCurrentTime: (time: number) => void;
 }
 
 const AdvancedPlayerContext = createContext<AdvancedPlayerContextType | null>(null);
@@ -131,6 +134,7 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
 
   const seek = useCallback((time: number) => {
     if (videoRef.current && !isAdPlaying) {
+      setCurrentTime(time)
       videoRef.current.currentTime = time;
     }
   }, [isAdPlaying]);
@@ -213,7 +217,10 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
 
   const initializePlayer = useCallback(async (props: AdvancedVideoPlayerProps) => {
     propsRef.current = props;
-    const { manifestUrl, storyboardUrl, ads, shakaConfig, drm, onPlayerReady } = props;
+    const { 
+      manifestUrl, storyboardUrl, ads, shakaConfig, drm, onPlayerReady,
+      buffering, retryParameters, lowLatencyMode, licenseRequestFilter, licenseResponseFilter 
+    } = props;
     
     if (!shaka || !isSupported || !videoRef.current || !containerRef.current) return;
 
@@ -233,6 +240,56 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     // Apply DRM if provided via top-level prop or inside shakaConfig
     if (drm) {
       player.configure({ drm });
+    }
+
+    // Apply Buffering configuration
+    if (buffering) {
+      player.configure({ streaming: buffering });
+    }
+
+    // Apply Network Retry Configuration
+    if (retryParameters) {
+      const retryConfig: any = {};
+      if (retryParameters.manifest) retryConfig.manifest = { retryParameters: retryParameters.manifest };
+      if (retryParameters.streaming) retryConfig.streaming = { retryParameters: retryParameters.streaming };
+      if (retryParameters.drm) retryConfig.drm = { retryParameters: retryParameters.drm };
+      player.configure(retryConfig);
+    }
+
+    // Apply Low Latency Mode configuration
+    if (lowLatencyMode) {
+      // Modern Shaka Player handles configurationForLowLatency, but we also manually apply
+      // recommended defaults if the method doesn't exist.
+      if (typeof player.configurationForLowLatency === 'function') {
+        player.configure(player.configurationForLowLatency());
+      } else {
+        player.configure({
+          streaming: {
+            lowLatencyMode: true,
+            inaccurateManifestTolerance: 0,
+            segmentPrefetchLimit: 2,
+            updateIntervalSeconds: 0.1,
+            maxDisabledTime: 1,
+            retryParameters: { baseDelay: 100 },
+          },
+          manifest: {
+            dash: { autoCorrectDrift: false },
+            retryParameters: { baseDelay: 100 },
+          },
+          drm: {
+            retryParameters: { baseDelay: 100 },
+          },
+        });
+      }
+    }
+
+    // Apply Network Filters
+    if (licenseRequestFilter) {
+      player.getNetworkingEngine().registerRequestFilter(licenseRequestFilter);
+    }
+    
+    if (licenseResponseFilter) {
+      player.getNetworkingEngine().registerResponseFilter(licenseResponseFilter);
     }
     
     // Crucial: Tell Shaka Player to use the dedicated ad video element instead of hijacking the main video!
@@ -364,10 +421,31 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
       setCanSkipAd(e.ad.canSkipNow ? e.ad.canSkipNow() : true);
     });
 
+    let finalManifestUrl = manifestUrl;
+
     // Fetch and inject Ads
     try {
-      if (ads?.adTagUrl) {
-        // Standard VAST/VMAP ad tag
+      if (ads?.mediaTailor) {
+        // AWS Elemental MediaTailor
+        if (ads.mediaTailor.type === 'client') {
+          finalManifestUrl = await adManager.requestMediaTailorStream(ads.mediaTailor.url, ads.mediaTailor.adsParams);
+        } else {
+          finalManifestUrl = await adManager.requestMediaTailorStream(ads.mediaTailor.url);
+        }
+      } else if (ads?.imaServerSide && typeof google !== 'undefined' && google.ima && google.ima.dai) {
+        // Server Side IMA (DAI)
+        if (ads.imaServerSide.assetKey) {
+          const streamRequest = new google.ima.dai.api.LiveStreamRequest();
+          streamRequest.assetKey = ads.imaServerSide.assetKey;
+          finalManifestUrl = await adManager.requestServerSideStream(streamRequest);
+        } else if (ads.imaServerSide.contentSourceId && ads.imaServerSide.videoId) {
+          const streamRequest = new google.ima.dai.api.VODStreamRequest();
+          streamRequest.contentSourceId = ads.imaServerSide.contentSourceId;
+          streamRequest.videoId = ads.imaServerSide.videoId;
+          finalManifestUrl = await adManager.requestServerSideStream(streamRequest);
+        }
+      } else if (ads?.adTagUrl && typeof google !== 'undefined' && google.ima) {
+        // Standard VAST/VMAP ad tag via IMA Client Side
         const adsRequest = new google.ima.AdsRequest();
         adsRequest.adTagUrl = ads.adTagUrl;
         adManager.requestClientSideAds(adsRequest);
@@ -435,7 +513,7 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     }
 
     try {
-      await player.load(manifestUrl);
+      await player.load(finalManifestUrl);
       
       // Load available tracks
       const tracks = player.getVariantTracks();
@@ -692,6 +770,7 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
         skipAd,
         initializePlayer,
         getThumbnail,
+        setCurrentTime
       }}
     >
       {children}

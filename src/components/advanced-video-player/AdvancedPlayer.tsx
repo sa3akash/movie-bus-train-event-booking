@@ -13,7 +13,7 @@ const PlayerInner = (props: AdvancedVideoPlayerProps) => {
 
   useEffect(() => {
     initializePlayer(props);
-  }, [props.manifestUrl, props.storyboardUrl, props.ads, props.shakaConfig, props.drm, initializePlayer]);
+  }, [props.manifestUrl, props.storyboardUrl, props.ads, props.shakaConfig, props.drm, props.buffering, props.retryParameters, props.lowLatencyMode, props.licenseRequestFilter, props.licenseResponseFilter, initializePlayer, props]);
 
   // Idle detection for hiding controls
   useEffect(() => {

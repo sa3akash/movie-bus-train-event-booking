@@ -8,14 +8,20 @@ import { VideoInfo } from "@/components/video/VideoInfo";
 import { VideoActions } from "@/components/video/VideoActions";
 import { useShakaContext } from "@/context/ShakaContext";
 
-const AdvancedVideoPlayer = dynamic(() => import("@/components/advanced-video-player").then(mod => mod.AdvancedVideoPlayer), {
-  ssr: false,
-  loading: () => (
-    <div className="w-full aspect-video bg-black flex items-center justify-center border border-border rounded-xl shadow-2xl">
-      <Loader2 className="h-10 w-10 text-primary animate-spin" />
-    </div>
-  ),
-});
+const AdvancedVideoPlayer = dynamic(
+  () =>
+    import("@/components/advanced-video-player").then(
+      (mod) => mod.AdvancedVideoPlayer,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full aspect-video bg-black flex items-center justify-center border border-border rounded-xl shadow-2xl">
+        <Loader2 className="h-10 w-10 text-primary animate-spin" />
+      </div>
+    ),
+  },
+);
 
 interface VideoData {
   id: string;
@@ -41,13 +47,15 @@ const VideoPlayerPage = () => {
   const [playerInstance, setPlayerInstance] = useState<any>(null);
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [manifestUrl, setManifestUrl] = useState<string | null>(null);
-  const [effectiveStoryboardUrl, setEffectiveStoryboardUrl] = useState<string | undefined>(undefined);
+  const [effectiveStoryboardUrl, setEffectiveStoryboardUrl] = useState<
+    string | undefined
+  >(undefined);
 
   const { downloads, isInitialized } = useShakaContext();
 
   useEffect(() => {
     if (!params.id) return;
-    
+
     fetch(`/api/video/${params.id}`)
       .then((res) => {
         if (!res.ok) throw new Error("Network offline");
@@ -72,14 +80,20 @@ const VideoPlayerPage = () => {
 
     const updateStoryboard = () => {
       let url = video.storyboardUrl || undefined;
-      
+
       if (video.storyboards) {
         // Modern browsers support navigator.connection
-        const conn = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+        const conn =
+          (navigator as any).connection ||
+          (navigator as any).mozConnection ||
+          (navigator as any).webkitConnection;
         if (conn && conn.effectiveType) {
-          if (conn.effectiveType === '5g' || conn.effectiveType === '4g') {
+          if (conn.effectiveType === "5g" || conn.effectiveType === "4g") {
             url = video.storyboards.high || url;
-          } else if (conn.effectiveType === 'slow-4g' || conn.effectiveType === '3g') {
+          } else if (
+            conn.effectiveType === "slow-4g" ||
+            conn.effectiveType === "3g"
+          ) {
             url = video.storyboards.medium || url;
           } else {
             url = video.storyboards.low || url;
@@ -89,7 +103,7 @@ const VideoPlayerPage = () => {
           url = video.storyboards.high || url;
         }
       }
-      
+
       setEffectiveStoryboardUrl(url);
     };
 
@@ -98,27 +112,29 @@ const VideoPlayerPage = () => {
     // Listen for network changes (e.g. toggling throttling in DevTools)
     const connection = (navigator as any).connection;
     if (connection) {
-      connection.addEventListener('change', updateStoryboard);
-      return () => connection.removeEventListener('change', updateStoryboard);
+      connection.addEventListener("change", updateStoryboard);
+      return () => connection.removeEventListener("change", updateStoryboard);
     }
   }, [video]);
 
   // Check if video is downloaded and resolve the manifestUrl
   useEffect(() => {
     if (!params.id || !isInitialized || loading) return;
-    
-    const found = downloads.find((item) => item.appMetadata?.videoId === params.id);
-    
+
+    const found = downloads.find(
+      (item) => item.appMetadata?.videoId === params.id,
+    );
+
     // Set isDownloaded state for the UI
     setIsDownloaded(!!found);
-    
-    // If we haven't set the manifest URL yet, do it now. 
+
+    // If we haven't set the manifest URL yet, do it now.
     // We only do this once to prevent the player from reloading if a download finishes while watching!
     if (!manifestUrl) {
       if (found) {
         console.log("Using offline cached video!");
         setManifestUrl(found.offlineUri);
-        
+
         // If network fetch failed, mock a video object to allow offline playback UI
         if (!video) {
           setVideo({
@@ -153,7 +169,7 @@ const VideoPlayerPage = () => {
 
   if (!video || video.status !== "COMPLETED") {
     // If we're offline and the video wasn't found in offline storage
-    const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+    const isOffline = typeof navigator !== "undefined" && !navigator.onLine;
 
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
@@ -164,11 +180,11 @@ const VideoPlayerPage = () => {
           {isOffline ? "You are offline" : "Video Unavailable"}
         </h2>
         <p className="text-muted-foreground mb-8 max-w-sm">
-          {isOffline 
+          {isOffline
             ? "This video is not saved to your device for offline viewing."
             : "This video may not exist or is still processing."}
         </p>
-        
+
         <div className="flex gap-4">
           <button
             onClick={() => router.back()}
@@ -212,6 +228,34 @@ const VideoPlayerPage = () => {
               blurDataUrl={video.blurDataUrls?.[0]}
               storyboardUrl={effectiveStoryboardUrl}
               ads={{ requestUrl: `/api/ads?videoId=${params.id}` }}
+              // Robust Player Configurations (all optional, overriding Shaka defaults)
+              buffering={{
+                bufferingGoal: 60, // Buffer 60 seconds of video ahead
+                rebufferingGoal: 15, // Require 15 seconds to resume playback if stalled
+                bufferBehind: 30, // Keep 30 seconds of video behind in the buffer for smooth rewinding
+                ignoreTextStreamFailures: true, // Don't fail playback if subtitles fail to load
+              }}
+              retryParameters={{
+                manifest: {
+                  maxAttempts: 5,
+                  baseDelay: 1000,
+                  backoffFactor: 2,
+                  timeout: 30000,
+                },
+                streaming: {
+                  maxAttempts: 5,
+                  baseDelay: 1000,
+                  backoffFactor: 2,
+                  timeout: 30000,
+                },
+                drm: {
+                  maxAttempts: 5,
+                  baseDelay: 1000,
+                  backoffFactor: 2,
+                  timeout: 30000,
+                },
+              }}
+              // lowLatencyMode={true} // Uncomment if this is a live stream
             />
           </div>
         ) : (
