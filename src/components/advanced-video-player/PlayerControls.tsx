@@ -13,7 +13,7 @@ export const PlayerControls = () => {
   const { toggleFullscreen, isFullscreen, isAdPlaying, togglePiP, textTracks, isTextTrackVisible, toggleTextTrackVisibility } = useAdvancedPlayer();
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-auto flex flex-col gap-2">
+    <div className="absolute bottom-0 left-0 right-0 p-4 bg-linear-to-t from-black/80 via-black/40 to-transparent pointer-events-auto flex flex-col gap-2">
       {/* Top row: Progress Bar */}
       <ProgressBar />
 
@@ -43,7 +43,7 @@ export const PlayerControls = () => {
           
           <button
             onClick={togglePiP}
-            className="p-1.5 text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/10"
+            className="hidden md:block p-1.5 text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/10"
             title="Picture-in-Picture"
           >
             <PictureInPicture className="w-5 h-5" />

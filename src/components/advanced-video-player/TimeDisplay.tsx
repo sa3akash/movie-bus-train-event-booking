@@ -69,7 +69,7 @@ export const TimeDisplay = () => {
         {formatTime(duration)}
       </div>
       {currentChapter && (
-        <div className="flex items-center gap-2 text-white/80 text-sm font-medium tracking-wide truncate">
+        <div className="hidden md:flex items-center gap-2 text-white/80 text-sm font-medium tracking-wide truncate">
           <span className="opacity-50 text-[10px]">•</span>
           <span className="max-w-[150px] md:max-w-[300px] truncate">{currentChapter.title}</span>
         </div>

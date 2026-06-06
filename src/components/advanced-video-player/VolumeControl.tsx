@@ -34,7 +34,7 @@ export const VolumeControl = () => {
 
   return (
     <div 
-      className="flex items-center gap-2 group"
+      className="hidden md:flex items-center gap-2 group"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
