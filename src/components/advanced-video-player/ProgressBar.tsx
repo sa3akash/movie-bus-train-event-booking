@@ -11,6 +11,7 @@ export const ProgressBar = () => {
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [thumbnailStyle, setThumbnailStyle] = useState<React.CSSProperties>({});
   const [thumbWidth, setThumbWidth] = useState<number>(160);
+  const [thumbScale, setThumbScale] = useState<number>(1);
 
   const displayTime = isAdPlaying ? adCurrentTime : currentTime;
   const displayDuration = isAdPlaying ? adDuration : duration;
@@ -39,7 +40,19 @@ export const ProgressBar = () => {
         getThumbnail(hoverTime).then((thumb) => {
           if (thumb) {
             setThumbnailUrl(thumb.uris[0]);
-            setThumbWidth(thumb.imageWidth);
+            
+            // Client-side scaling to strictly enforce max 160x90 bounding box 
+            // for older videos processed before the backend update
+            let newScale = 1;
+            if (thumb.imageHeight > 90) {
+              newScale = 90 / thumb.imageHeight;
+            } else if (thumb.imageWidth > 160) {
+              newScale = 160 / thumb.imageWidth;
+            }
+            
+            setThumbWidth(thumb.imageWidth * newScale);
+            setThumbScale(newScale);
+            
             setThumbnailStyle({
               width: `${thumb.imageWidth}px`,
               height: `${thumb.imageHeight}px`,
@@ -94,8 +107,12 @@ export const ProgressBar = () => {
           />
           {thumbnailUrl && (
             <div 
-              className="absolute bottom-4 -translate-x-1/2 pointer-events-none bg-black rounded overflow-hidden shadow-lg border border-white/20"
-              style={{ left: `clamp(${thumbWidth / 2}px, ${hoverPosition}%, calc(100% - ${thumbWidth / 2}px))` }}
+              className="absolute bottom-4 pointer-events-none bg-black rounded overflow-hidden shadow-lg border border-white/20"
+              style={{ 
+                left: `clamp(${thumbWidth / 2}px, ${hoverPosition}%, calc(100% - ${thumbWidth / 2}px))`,
+                transform: `translateX(-50%) scale(${thumbScale})`,
+                transformOrigin: "bottom center"
+              }}
             >
               <div
                 style={{

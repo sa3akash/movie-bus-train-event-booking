@@ -70,17 +70,26 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
       const columns = 10;
       const rows = 10;
       
-      const videoWidth = videoStream?.width || 1280;
-      const videoHeight = videoStream?.height || 720;
+      let videoWidth = videoStream?.width || 1280;
+      let videoHeight = videoStream?.height || 720;
+      
+      // Handle mobile video rotation metadata (Reels/TikToks)
+      const rotation = videoStream?.tags?.rotate || videoStream?.tags?.ROTATE;
+      if (rotation === '90' || rotation === '270' || rotation === '-90') {
+        const temp = videoWidth;
+        videoWidth = videoHeight;
+        videoHeight = temp;
+      }
+
       const aspectRatio = videoWidth / videoHeight;
       
-      let tileWidth, tileHeight;
-      if (aspectRatio >= 1) { // Landscape or Square
-        tileWidth = 160;
-        tileHeight = Math.round(160 / aspectRatio);
-      } else { // Portrait
-        tileHeight = 160;
-        tileWidth = Math.round(160 * aspectRatio);
+      let tileWidth = 160;
+      let tileHeight = Math.round(160 / aspectRatio);
+      
+      // Strict bounding box: never exceed 160px width or 90px height!
+      if (tileHeight > 90) {
+        tileHeight = 90;
+        tileWidth = Math.round(90 * aspectRatio);
       }
 
       await generateStoryboardSprite(originalPath, storyboardPattern, interval, tileWidth, tileHeight, columns, rows);
