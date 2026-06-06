@@ -6,7 +6,7 @@ import { VolumeControl } from "./VolumeControl";
 import { TimeDisplay } from "./TimeDisplay";
 import { ProgressBar } from "./ProgressBar";
 import { SettingsMenu } from "./SettingsMenu";
-import { useAdvancedPlayer } from "@/context/AdvancedPlayerContext";
+import { useAdvancedPlayer } from "./context";
 import { Maximize, Minimize, PictureInPicture } from "lucide-react";
 
 export const PlayerControls = () => {

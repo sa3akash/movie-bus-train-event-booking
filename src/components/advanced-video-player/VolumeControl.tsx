@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { useAdvancedPlayer } from "@/context/AdvancedPlayerContext";
+import { useAdvancedPlayer } from "./context";
 import { Volume2, VolumeX, Volume1 } from "lucide-react";
 
 export const VolumeControl = () => {

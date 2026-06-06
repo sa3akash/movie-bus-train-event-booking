@@ -139,9 +139,13 @@ export function generateStoryboardSprite(
   rows: number = 10,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
+    const isWebp = outputPattern.endsWith(".webp");
+    const codecOptions = isWebp ? ["-c:v libwebp", "-q:v 60"] : ["-q:v 3"];
+
     ffmpeg(originalPath)
       .outputOptions([
         `-vf fps=1/${intervalSeconds},scale=${tileWidth}:${tileHeight},tile=${columns}x${rows}`,
+        ...codecOptions,
       ])
       .output(outputPattern)
       .on("end", () => resolve())

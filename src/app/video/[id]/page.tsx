@@ -8,7 +8,7 @@ import { VideoInfo } from "@/components/video/VideoInfo";
 import { VideoActions } from "@/components/video/VideoActions";
 import { useShakaContext } from "@/context/ShakaContext";
 
-const AdvancedPlayer = dynamic(() => import("@/components/advanced-video-player/AdvancedPlayer").then(mod => mod.AdvancedPlayer), {
+const AdvancedVideoPlayer = dynamic(() => import("@/components/advanced-video-player").then(mod => mod.AdvancedVideoPlayer), {
   ssr: false,
   loading: () => (
     <div className="w-full aspect-video bg-black flex items-center justify-center border border-border rounded-xl shadow-2xl">
@@ -166,12 +166,13 @@ const VideoPlayerPage = () => {
         {/* Player Container */}
         {manifestUrl ? (
           <div className="w-full">
-            <AdvancedPlayer
+            <AdvancedVideoPlayer
               manifestUrl={manifestUrl}
               videoId={params.id as string}
               posterUrl={video.thumbnails?.[0]}
               blurDataUrl={video.blurDataUrls?.[0]}
               storyboardUrl={video.storyboardUrl || undefined}
+              ads={{ requestUrl: `/api/ads?videoId=${params.id}` }}
             />
           </div>
         ) : (

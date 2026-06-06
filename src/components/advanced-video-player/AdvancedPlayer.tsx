@@ -1,26 +1,19 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { useAdvancedPlayer, AdvancedPlayerProvider } from "@/context/AdvancedPlayerContext";
+import { useAdvancedPlayer, AdvancedPlayerProvider } from "./context";
 import { PlayerControls } from "./PlayerControls";
 import { AdOverlay } from "./AdOverlay";
 import { Loader2 } from "lucide-react";
+import { AdvancedVideoPlayerProps } from "./types";
 
-interface AdvancedPlayerProps {
-  manifestUrl: string;
-  videoId: string;
-  posterUrl?: string;
-  storyboardUrl?: string;
-  blurDataUrl?: string;
-}
-
-const PlayerInner = ({ manifestUrl, videoId, posterUrl, storyboardUrl, blurDataUrl }: AdvancedPlayerProps) => {
+const PlayerInner = (props: AdvancedVideoPlayerProps) => {
   const { videoRef, containerRef, initializePlayer, isBuffering, isAdPlaying } = useAdvancedPlayer();
   const [isIdle, setIsIdle] = useState(false);
 
   useEffect(() => {
-    initializePlayer(manifestUrl, videoId, storyboardUrl);
-  }, [manifestUrl, videoId, storyboardUrl, initializePlayer]);
+    initializePlayer(props);
+  }, [props.manifestUrl, props.storyboardUrl, props.ads, props.shakaConfig, props.drm, initializePlayer]);
 
   // Idle detection for hiding controls
   useEffect(() => {
@@ -57,20 +50,23 @@ const PlayerInner = ({ manifestUrl, videoId, posterUrl, storyboardUrl, blurDataU
   return (
     <div
       ref={containerRef}
-      className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-border/50 group select-none transition-all duration-700"
-      style={blurDataUrl ? {
-        backgroundImage: `url(${blurDataUrl})`,
+      className={`relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-border/50 group select-none transition-all duration-700 ${props.className || ''}`}
+      style={props.blurDataUrl ? {
+        backgroundImage: `url(${props.blurDataUrl})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-      } : undefined}
+        ...props.style
+      } : props.style}
     >
       {/* Video Element */}
       <video
         ref={videoRef}
-        poster={posterUrl}
+        poster={props.posterUrl}
         className="w-full h-full object-contain"
-        autoPlay
+        autoPlay={props.autoPlay ?? true}
         playsInline
+        muted={props.muted}
+        loop={props.loop}
       />
 
       {/* Loading Overlay */}
@@ -99,7 +95,7 @@ const PlayerInner = ({ manifestUrl, videoId, posterUrl, storyboardUrl, blurDataU
   );
 };
 
-export const AdvancedPlayer = (props: AdvancedPlayerProps) => {
+export const AdvancedVideoPlayer = (props: AdvancedVideoPlayerProps) => {
   return (
     <AdvancedPlayerProvider>
       <PlayerInner {...props} />

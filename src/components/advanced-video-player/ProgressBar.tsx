@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useEffect } from "react";
-import { useAdvancedPlayer } from "@/context/AdvancedPlayerContext";
+import { useAdvancedPlayer } from "./context";
 
 export const ProgressBar = () => {
   const { currentTime, duration, seek, isAdPlaying, adCurrentTime, adDuration, getThumbnail } = useAdvancedPlayer();

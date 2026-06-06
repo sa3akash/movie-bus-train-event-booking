@@ -63,12 +63,22 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
       
       const storyboardPrefix = "storyboard";
       // Ensure forward slashes for ffmpeg image2 pattern to prevent \t escaping issues on Windows
+      // Use .jpg for stability and performance on large grids, combined with high quality options
       const storyboardPattern = path.join(thumbnailsDir, `${storyboardPrefix}-%04d.jpg`).replace(/\\/g, "/");
       const vttPath = path.join(thumbnailsDir, "storyboard.vtt");
       
       const interval = Math.max(1, Math.min(10, Math.floor(durationFloat / 100)));
-      const columns = 10;
-      const rows = 10;
+      const totalTiles = Math.ceil(durationFloat / interval);
+      
+      // Dynamically calculate grid to minimize black space
+      let columns = Math.ceil(Math.sqrt(totalTiles));
+      if (columns > 10) columns = 10;
+      let rows = Math.ceil(totalTiles / columns);
+      // Cap rows so the image doesn't exceed 16383px height limit (WebP max dimension)
+      if (rows > 100) rows = 100;
+      // In case totalTiles is 0 (extremely short/empty video), fallback safely
+      if (columns === 0) columns = 1;
+      if (rows === 0) rows = 1;
       
       let videoWidth = videoStream?.width || 1280;
       let videoHeight = videoStream?.height || 720;
@@ -83,13 +93,14 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
 
       const aspectRatio = videoWidth / videoHeight;
       
-      let tileWidth = 160;
-      let tileHeight = Math.round(160 / aspectRatio);
+      // Increased tile dimensions for better clarity
+      let tileWidth = 256;
+      let tileHeight = Math.round(256 / aspectRatio / 2) * 2; // ensure even number
       
-      // Strict bounding box: never exceed 160px width or 90px height!
-      if (tileHeight > 90) {
-        tileHeight = 90;
-        tileWidth = Math.round(90 * aspectRatio);
+      // Strict bounding box: never exceed 256px width or 144px height!
+      if (tileHeight > 144) {
+        tileHeight = 144;
+        tileWidth = Math.round(144 * aspectRatio / 2) * 2; // ensure even number
       }
 
       await generateStoryboardSprite(originalPath, storyboardPattern, interval, tileWidth, tileHeight, columns, rows);

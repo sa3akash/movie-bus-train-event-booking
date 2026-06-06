@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useAdvancedPlayer } from "@/context/AdvancedPlayerContext";
+import { useAdvancedPlayer } from "./context";
 
 const formatTime = (seconds: number) => {
   if (isNaN(seconds)) return "0:00";

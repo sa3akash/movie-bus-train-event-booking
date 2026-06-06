@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback } from "react";
-import { useShakaContext } from "./ShakaContext";
+import { useShakaContext } from "../../context/ShakaContext";
+import { AdvancedVideoPlayerProps } from "./types";
 
 interface AdvancedPlayerContextType {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -42,7 +43,7 @@ interface AdvancedPlayerContextType {
   setPlaybackRate: (rate: number) => void;
   selectTrack: (trackId: string | null) => void;
   skipAd: () => void;
-  initializePlayer: (manifestUrl: string, videoId: string, storyboardUrl?: string) => Promise<void>;
+  initializePlayer: (props: AdvancedVideoPlayerProps) => Promise<void>;
   getThumbnail: (time: number) => Promise<any | null>;
 }
 
@@ -56,6 +57,7 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
   const playerRef = useRef<any>(null);
   const adManagerRef = useRef<any>(null);
   const registeredAdsRef = useRef<Set<string>>(new Set());
+  const propsRef = useRef<AdvancedVideoPlayerProps | null>(null);
 
   // Core state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -209,7 +211,10 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  const initializePlayer = useCallback(async (manifestUrl: string, videoId: string, storyboardUrl?: string) => {
+  const initializePlayer = useCallback(async (props: AdvancedVideoPlayerProps) => {
+    propsRef.current = props;
+    const { manifestUrl, storyboardUrl, ads, shakaConfig, drm, onPlayerReady } = props;
+    
     if (!shaka || !isSupported || !videoRef.current || !containerRef.current) return;
 
     // Destroy existing instance if present
@@ -219,6 +224,16 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
 
     const player = new shaka.Player(videoRef.current);
     playerRef.current = player;
+    
+    // Apply comprehensive Shaka configuration if provided
+    if (shakaConfig) {
+      player.configure(shakaConfig);
+    }
+    
+    // Apply DRM if provided via top-level prop or inside shakaConfig
+    if (drm) {
+      player.configure({ drm });
+    }
     
     // Crucial: Tell Shaka Player to use the dedicated ad video element instead of hijacking the main video!
     player.configure('ads.supportsMultipleMediaElements', true);
@@ -293,10 +308,10 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
       }
       
       let title = "Advertisement";
+      let metadata: any = null;
       if (typeof ad.getTitle === 'function' && ad.getTitle()) {
         title = ad.getTitle();
       } else {
-        let metadata: { title?: string } | undefined;
         const id1 = typeof ad.getAdId === 'function' ? ad.getAdId() : null;
         if (id1 && adMetadataMapRef.current.has(id1)) {
           metadata = adMetadataMapRef.current.get(id1);
@@ -319,6 +334,7 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
       }
       
       setAdTitle(title);
+      propsRef.current?.onAdStart?.({ id: ad.id, title, ...metadata });
       
       // isSkippable means "is it a skippable type of ad". canSkipNow means "has the countdown finished".
       setCanSkipAd(ad.canSkipNow ? ad.canSkipNow() : false);
@@ -341,6 +357,7 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
         setDuration(videoRef.current.duration || 0);
         setCurrentTime(videoRef.current.currentTime || 0);
       }
+      propsRef.current?.onAdEnd?.();
     });
 
     adManager.addEventListener('ad-skip-state-changed', (e: any) => {
@@ -349,12 +366,24 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
 
     // Fetch and inject Ads
     try {
-      const adRequestUrl = `/api/ads?videoId=${videoId}`;
-      const res = await fetch(adRequestUrl);
-      const data = await res.json();
-      
-      if (data.success && data.ads) {
-        data.ads.forEach((ad: any) => {
+      if (ads?.adTagUrl) {
+        // Standard VAST/VMAP ad tag
+        const adsRequest = new google.ima.AdsRequest();
+        adsRequest.adTagUrl = ads.adTagUrl;
+        adManager.requestClientSideAds(adsRequest);
+      } else if (ads?.requestUrl || ads?.customAds) {
+        // Custom Server-Side Interstitials
+        let customAdsData = ads.customAds || [];
+        
+        if (ads.requestUrl && customAdsData.length === 0) {
+          const res = await fetch(ads.requestUrl);
+          const data = await res.json();
+          if (data.success && data.ads) {
+            customAdsData = data.ads;
+          }
+        }
+        
+        customAdsData.forEach((ad: any) => {
           if (registeredAdsRef.current.has(ad.id)) return;
           
           adMetadataMapRef.current.set(ad.id, {
@@ -455,11 +484,15 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
           console.warn("Skipping legacy storyboard URL (not a VTT file):", storyboardUrl);
         }
       }
+      if (onPlayerReady) {
+        onPlayerReady(player);
+      }
     } catch (err: any) {
       if (err.code === 7000) {
         console.warn("Load interrupted (likely due to fast re-mounting).");
       } else {
         console.error("Error loading manifest:", err.code, err.message, err);
+        propsRef.current?.onError?.(err);
       }
     }
 
@@ -489,12 +522,14 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     const handleTimeUpdate = () => {
       if (!isAdPlayingRef.current) {
         setCurrentTime(video.currentTime);
+        propsRef.current?.onTimeUpdate?.(video.currentTime, video.duration);
       }
     };
     const handleDurationChange = () => setDuration(video.duration);
     const handleRateChange = () => setPlaybackRateState(video.playbackRate);
     const handleEnterPiP = () => setIsPiP(true);
     const handleLeavePiP = () => setIsPiP(false);
+    const handleEnded = () => propsRef.current?.onEnded?.();
     const handlePlay = () => {
       if (isAdPlayingRef.current) {
         // Prevent main video from playing during an ad
@@ -517,6 +552,7 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     video.addEventListener("ratechange", handleRateChange);
     video.addEventListener("enterpictureinpicture", handleEnterPiP);
     video.addEventListener("leavepictureinpicture", handleLeavePiP);
+    video.addEventListener("ended", handleEnded);
 
     return () => {
       video.removeEventListener("timeupdate", handleTimeUpdate);
@@ -527,6 +563,7 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
       video.removeEventListener("ratechange", handleRateChange);
       video.removeEventListener("enterpictureinpicture", handleEnterPiP);
       video.removeEventListener("leavepictureinpicture", handleLeavePiP);
+      video.removeEventListener("ended", handleEnded);
     };
   }, []);
 

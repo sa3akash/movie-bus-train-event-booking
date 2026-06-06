@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { useAdvancedPlayer } from "@/context/AdvancedPlayerContext";
+import { useAdvancedPlayer } from "./context";
 import { Settings, ChevronRight, ChevronLeft, Check } from "lucide-react";
 
 type MenuState = "main" | "quality" | "speed";

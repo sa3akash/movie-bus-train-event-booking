@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useAdvancedPlayer } from "@/context/AdvancedPlayerContext";
+import { useAdvancedPlayer } from "./context";
 import { Play, Pause, RotateCcw, RotateCw } from "lucide-react";
 
 export const PlaybackButtons = () => {
