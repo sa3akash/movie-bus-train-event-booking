@@ -40,7 +40,7 @@ const DownloadsPage = () => {
             </div>
             <h2 className="text-xl font-semibold mb-2">No downloaded videos</h2>
             <p className="text-muted-foreground max-w-sm">
-              Videos you download will securely appear here for offline viewing. You don't need an internet connection to watch them!
+              Videos you download will securely appear here for offline viewing. You don&apos;t need an internet connection to watch them!
             </p>
           </div>
         ) : (
@@ -53,7 +53,7 @@ const DownloadsPage = () => {
                 <div key={video.offlineUri} className="flex gap-4 p-4 rounded-xl border border-border bg-card hover:border-primary/50 transition-all shadow-sm group relative">
                   
                   {/* Thumbnail */}
-                  <Link href={`/video/${videoId}`} className="relative h-28 w-48 shrink-0 rounded-lg overflow-hidden bg-gradient-to-br from-zinc-800 to-zinc-950 block">
+                  <Link href={`/video/${videoId}`} className="relative h-28 w-48 shrink-0 rounded-lg overflow-hidden bg-linear-to-br from-zinc-800 to-zinc-950 block">
                     <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-black/40 backdrop-blur-[2px]">
                       <div className="bg-primary/90 rounded-full p-2 transform scale-90 group-hover:scale-100 transition-transform">
                         <Play className="h-5 w-5 text-primary-foreground fill-current ml-0.5" />

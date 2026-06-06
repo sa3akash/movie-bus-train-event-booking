@@ -3,11 +3,18 @@
 import React, { useEffect } from "react";
 import { Share2, ThumbsUp, Download, CheckCircle2, Loader2 } from "lucide-react";
 import { useShakaContext } from "@/context/ShakaContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface VideoData {
   id: string;
   dashUrl: string | null;
   hlsUrl: string | null;
+  resolutions?: string[] | null;
 }
 
 interface VideoActionsProps {
@@ -31,12 +38,12 @@ export const VideoActions: React.FC<VideoActionsProps> = ({
     setIsDownloaded(!!found);
   }, [downloads, video.id, setIsDownloaded]);
 
-  const handleDownload = async () => {
+  const handleDownload = async (resolution?: string) => {
     const manifestUrl = video.dashUrl || video.hlsUrl;
     if (!manifestUrl) return;
     
     try {
-      await downloadContent(manifestUrl, video.id);
+      await downloadContent(manifestUrl, video.id, resolution);
       alert("Successfully stored in browser offline cache!");
     } catch (err: any) {
       console.error("Download failed", err);
@@ -66,23 +73,46 @@ export const VideoActions: React.FC<VideoActionsProps> = ({
           <span>Downloaded</span>
         </div>
       ) : (
-        <button 
-          onClick={handleDownload}
-          disabled={progressValue !== null || !isSupported}
-          className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-full font-medium transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
-        >
-          {progressValue !== null ? (
-            <>
-              <Loader2 className="h-5 w-5 animate-spin" />
-              <span>{progressValue}%</span>
-            </>
-          ) : (
-            <>
-              <Download className="h-5 w-5" />
-              <span>{isSupported ? "Download" : "Not Supported"}</span>
-            </>
+        <DropdownMenu>
+          <DropdownMenuTrigger>
+            <button 
+              disabled={progressValue !== null || !isSupported}
+              className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-full font-medium transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+            >
+              {progressValue !== null ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>{progressValue}%</span>
+                </>
+              ) : (
+                <>
+                  <Download className="h-5 w-5" />
+                  <span>{isSupported ? "Download" : "Not Supported"}</span>
+                </>
+              )}
+            </button>
+          </DropdownMenuTrigger>
+          {isSupported && progressValue === null && (
+            <DropdownMenuContent align="end">
+              {video.resolutions && video.resolutions.length > 0 ? (
+                <>
+                  <DropdownMenuItem onClick={() => handleDownload()}>
+                    Best Available
+                  </DropdownMenuItem>
+                  {video.resolutions.map((res) => (
+                    <DropdownMenuItem key={res} onClick={() => handleDownload(res)}>
+                      {res}
+                    </DropdownMenuItem>
+                  ))}
+                </>
+              ) : (
+                <DropdownMenuItem onClick={() => handleDownload()}>
+                  Best Available
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
           )}
-        </button>
+        </DropdownMenu>
       )}
     </div>
   );

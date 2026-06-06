@@ -2,35 +2,40 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useRef, ReactNode, useCallback } from "react";
+import type shaka from "shaka-player/dist/shaka-player.ui";
 
 export interface OfflineVideo {
   offlineUri: string;
   originalManifestUri: string;
   duration: number;
   size: number;
-  appMetadata: any;
+  appMetadata: {
+    videoId?: string;
+    downloadedAt?: string;
+    [key: string]: unknown;
+  };
 }
 
 export interface PlayerInstance {
-  player: any;
-  ui: any;
+  player: shaka.Player;
+  ui: shaka.ui.Overlay;
 }
 
 interface ShakaContextType {
-  shaka: any | null; // the loaded shaka module
+  shaka: typeof shaka | null; // the loaded shaka module
   isSupported: boolean;
   isInitialized: boolean;
   downloads: OfflineVideo[];
   downloadProgress: Record<string, number>;
   refreshDownloads: () => Promise<void>;
-  downloadContent: (manifestUri: string, videoId: string) => Promise<void>;
+  downloadContent: (manifestUri: string, videoId: string, resolution?: string) => Promise<void>;
   removeContent: (offlineUri: string) => Promise<void>;
   initPlayer: (
     videoElement: HTMLVideoElement,
     containerElement: HTMLDivElement,
     manifestUrl: string,
     videoId?: string,
-    onPlayerReady?: (player: any) => void
+    onPlayerReady?: (player: shaka.Player) => void
   ) => Promise<PlayerInstance | null>;
 }
 
@@ -41,9 +46,10 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [downloads, setDownloads] = useState<OfflineVideo[]>([]);
   const [downloadProgress, setDownloadProgress] = useState<Record<string, number>>({});
+  const [shakaInstance, setShakaInstance] = useState<typeof shaka | null>(null);
   
-  const storageRef = useRef<any>(null);
-  const shakaRef = useRef<any>(null);
+  const storageRef = useRef<shaka.offline.Storage | null>(null);
+  const shakaRef = useRef<typeof shaka | null>(null);
   // Keep track of dynamically registered ads to prevent duplicate configuration loops
   const registeredAdsRef = useRef<Set<string>>(new Set());
 
@@ -51,7 +57,13 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
     if (!storageRef.current) return;
     try {
       const list = await storageRef.current.list();
-      setDownloads(list);
+      setDownloads(list.map(item => ({
+        offlineUri: item.offlineUri || "",
+        originalManifestUri: item.originalManifestUri,
+        duration: item.duration,
+        size: item.size,
+        appMetadata: item.appMetadata as OfflineVideo["appMetadata"]
+      })));
     } catch (err) {
       console.error("Failed to list downloaded content", err);
     }
@@ -65,13 +77,15 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
     shaka.polyfill.installAll();
 
     if (shaka.Player.isBrowserSupported()) {
-      setIsSupported(true);
-      
       // Initialize Storage
       const storage = new shaka.offline.Storage();
       storageRef.current = storage;
 
-      refreshDownloads().then(() => setIsInitialized(true));
+      refreshDownloads().then(() => {
+        setIsSupported(true);
+        setIsInitialized(true);
+        setShakaInstance(shaka);
+      });
     } else {
       console.error("Browser not supported for Shaka Player");
     }
@@ -84,18 +98,48 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [refreshDownloads]);
 
-  const downloadContent = useCallback(async (manifestUri: string, videoId: string) => {
+  const downloadContent = useCallback(async (manifestUri: string, videoId: string, resolution?: string) => {
     if (!storageRef.current) throw new Error("Storage not initialized");
 
+    const storage = storageRef.current;
+    
+    // @ts-expect-error - defaultTrackSelect is not typed in shaka.extern
+    let trackSelectionCallback = shakaRef.current?.offline?.Storage?.defaultTrackSelect;
+
+    if (resolution) {
+      const heightMatch = resolution.match(/(\d+)p/);
+      const height = heightMatch ? parseInt(heightMatch[1], 10) : parseInt(resolution, 10);
+      
+      if (!isNaN(height)) {
+        trackSelectionCallback = (tracks: shaka.extern.Track[]) => {
+          const hasExactMatch = tracks.some(t => t.type === 'video' && t.height === height);
+          if (hasExactMatch) {
+            return tracks.filter((t) =>
+              t.type === 'audio' ||
+              t.type === 'text' ||
+              (t.type === 'video' && t.height === height)
+            );
+          }
+          // @ts-expect-error - defaultTrackSelect is not typed
+          if (shakaRef.current?.offline?.Storage?.defaultTrackSelect) {
+            // @ts-expect-error - defaultTrackSelect is not typed
+            return shakaRef.current.offline.Storage.defaultTrackSelect(tracks);
+          }
+          return tracks;
+        };
+      }
+    }
+
     // Configure storage for this specific download to track progress
-    storageRef.current.configure({
+    storage.configure({
       offline: {
-        progressCallback: (content: any, progress: number) => {
+        progressCallback: (content: shaka.extern.StoredContent, progress: number) => {
           setDownloadProgress((prev) => ({
             ...prev,
             [videoId]: progress,
           }));
         },
+        ...(trackSelectionCallback && { trackSelectionCallback }),
       },
     });
 
@@ -106,7 +150,11 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const operation = storageRef.current.store(manifestUri, metadata);
-      await operation.promise;
+      if (operation && typeof (operation as any).promise !== 'undefined') {
+        await (operation as any).promise;
+      } else {
+        await operation;
+      }
       
       setDownloadProgress((prev) => {
         const next = { ...prev };
@@ -131,8 +179,8 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const operation = storageRef.current.remove(offlineUri);
-      if (operation.promise) {
-        await operation.promise;
+      if (operation && typeof (operation as any).promise !== 'undefined') {
+        await (operation as any).promise;
       } else {
          await operation;
       }
@@ -148,7 +196,7 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
     containerElement: HTMLDivElement,
     manifestUrl: string,
     videoId?: string,
-    onPlayerReady?: (player: any) => void
+    onPlayerReady?: (player: shaka.Player) => void
   ): Promise<PlayerInstance | null> => {
     if (!shakaRef.current) return null;
     const shaka = shakaRef.current;
@@ -166,16 +214,13 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
         console.error("Shaka Player Error", event.detail);
       });
 
-      controls.addEventListener("error", (event: any) => {
-        console.error("Shaka UI Error", event.detail);
+      controls?.addEventListener("error", (event: any) => {
+        console.error("Shaka UI Error", event?.detail);
       });
 
       // Initialize Custom AdManager Logic
       try {
         const adManager = player.getAdManager();
-        // const csContainer = controls.getClientSideAdContainer();
-        // const ssContainer = controls.getServerSideAdContainer();
-        // adManager.setContainers(csContainer, ssContainer);
 
         // Fetch custom ads from our self-hosted Ad Server API route
         const adRequestUrl = videoId ? `/api/ads?videoId=${videoId}` : `/api/ads`;
@@ -183,13 +228,25 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
         const data = await res.json();
         
         if (data.success && data.ads) {
-          data.ads.forEach((ad: any) => {
+          data.ads.forEach((ad: {
+            id: string;
+            groupId?: string;
+            startTime: number;
+            endTime?: number;
+            uri: string;
+            mimeType?: string;
+            isSkippable?: boolean;
+            skipOffset?: number;
+            skipFor?: number;
+            resumeOffset?: number;
+            playoutLimit?: number;
+            category: string;
+            clickThroughUrl?: string;
+            tracking?: Record<string, string[]>;
+          }) => {
             // Safety check: skip adding if this specific ad ID has already been assigned 
             if (registeredAdsRef.current.has(ad.id)) return;
 
-            // Fix Cross-Origin tracking issues:
-            // Shaka Player resolves relative tracking URLs against the ad's manifest URI.
-            // If the ad is hosted on a CDN, the tracking URL becomes cross-origin and fails/aborts the ad!
             const safeTracking: Record<string, string[]> = {};
             if (ad.tracking) {
               for (const [event, urls] of Object.entries(ad.tracking)) {
@@ -199,10 +256,10 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
               }
             }
 
-            adManager.addCustomInterstitial({
+            adManager?.addCustomInterstitial({
               id: ad.id,
               groupId: ad.groupId || null,
-              startTime: ad.startTime === 0 ? null : ad.startTime,
+              startTime: ad.startTime,
               endTime: ad.endTime ?? null,
               uri: ad.uri,
               mimeType: ad.mimeType || null,
@@ -210,11 +267,11 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
               skipOffset: ad.skipOffset ?? 5,
               skipFor: ad.skipFor || null,
               canJump: false,
-              resumeOffset: ad.category === "PRE_ROLL" ? 0 : (ad.resumeOffset ?? null), // 0 restarts video.
-              playoutLimit: ad.playoutLimit ?? null, // Null is default, 1 might strictly limit duration in some edge cases
+              resumeOffset: ad.category === "PRE_ROLL" ? 0 : (ad.resumeOffset ?? null),
+              playoutLimit: ad.playoutLimit ?? null,
               once: true,
-              pre: ad.category === "PRE_ROLL", // Use explicit DB category
-              post: ad.category === "POST_ROLL", // Support post-roll
+              pre: ad.category === "PRE_ROLL",
+              post: ad.category === "POST_ROLL",
               timelineRange: false,
               loop: false,
               overlay: null,
@@ -222,8 +279,7 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
               currentVideo: null,
               background: null,
               clickThroughUrl: ad.clickThroughUrl || null,
-              tracking: Object.keys(safeTracking).length > 0 ? safeTracking : null,
-               
+              tracking: Object.keys(safeTracking).length > 0 ? (safeTracking as any) : null,
             });
 
             registeredAdsRef.current.add(ad.id);
@@ -250,7 +306,7 @@ export const ShakaProvider = ({ children }: { children: ReactNode }) => {
   return (
     <ShakaContext.Provider
       value={{
-        shaka: shakaRef.current,
+        shaka: shakaInstance,
         downloads,
         downloadProgress,
         isSupported,
