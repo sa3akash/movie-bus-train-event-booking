@@ -318,6 +318,7 @@ const VideoPlayerPage = () => {
                   endTime: 56,
                 },
               ]}
+              isLive={true}
             />
           </div>
         ) : (

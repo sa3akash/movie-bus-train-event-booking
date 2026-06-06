@@ -4,17 +4,146 @@ import React, { useEffect, useState } from "react";
 import { useAdvancedPlayer, AdvancedPlayerProvider } from "./context";
 import { PlayerControls } from "./PlayerControls";
 import { AdOverlay } from "./AdOverlay";
+import { StatsOverlay } from "./StatsOverlay";
 import { Loader2 } from "lucide-react";
 import { AdvancedVideoPlayerProps } from "./types";
 
 const PlayerInner = (props: AdvancedVideoPlayerProps) => {
-  const { videoRef, containerRef, initializePlayer, isBuffering, isAdPlaying } = useAdvancedPlayer();
+  const { 
+    videoRef, 
+    containerRef, 
+    initializePlayer, 
+    loadVttStoryboard,
+    isBuffering, 
+    isAdPlaying, 
+    isLiveState,
+    togglePlay,
+    toggleMute,
+    toggleFullscreen,
+    seek,
+    currentTime,
+    volume,
+    setVolume,
+    duration
+  } = useAdvancedPlayer();
   const [isIdle, setIsIdle] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+  const [showStats, setShowStats] = useState(false);
+
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (rect) {
+      setContextMenu({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    }
+  };
 
   useEffect(() => {
     initializePlayer(props);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.manifestUrl, props.storyboardUrl, props.videoId, initializePlayer]);
+  }, [props.manifestUrl, props.videoId, props.isLive]);
+
+  // Load or update storyboard when URL changes (without resetting player)
+  useEffect(() => {
+    if (props.storyboardUrl) {
+      loadVttStoryboard(props.storyboardUrl);
+    }
+  }, [props.storyboardUrl, loadVttStoryboard]);
+
+  // Handle ?t= parameter from URL
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const tParam = urlParams.get('t');
+    
+    if (tParam && !isNaN(Number(tParam))) {
+      const time = Number(tParam);
+      const video = videoRef.current;
+      if (!video) return;
+
+      const handleReadyToSeek = () => {
+        // Only seek once when initially loaded
+        seek(time);
+        video.removeEventListener('loadedmetadata', handleReadyToSeek);
+        video.removeEventListener('canplay', handleReadyToSeek);
+      };
+
+      if (video.readyState >= 1) {
+        handleReadyToSeek();
+      } else {
+        video.addEventListener('loadedmetadata', handleReadyToSeek);
+        video.addEventListener('canplay', handleReadyToSeek);
+      }
+      
+      return () => {
+        video.removeEventListener('loadedmetadata', handleReadyToSeek);
+        video.removeEventListener('canplay', handleReadyToSeek);
+      };
+    }
+  }, [seek, videoRef]);
+
+  // Keyboard controls
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (
+        document.activeElement?.tagName === "INPUT" ||
+        document.activeElement?.tagName === "TEXTAREA" ||
+        document.activeElement?.tagName === "SELECT" ||
+        document.activeElement?.isContentEditable
+      ) {
+        return;
+      }
+
+      switch (e.key.toLowerCase()) {
+        case " ":
+        case "k":
+          e.preventDefault();
+          togglePlay();
+          break;
+        case "f":
+          e.preventDefault();
+          toggleFullscreen();
+          break;
+        case "m":
+          e.preventDefault();
+          toggleMute();
+          break;
+        case "arrowleft":
+          e.preventDefault();
+          seek(Math.max(0, currentTime - 5));
+          break;
+        case "arrowright":
+          e.preventDefault();
+          seek(Math.min(duration, currentTime + 5));
+          break;
+        case "arrowup":
+          e.preventDefault();
+          setVolume(Math.min(1, volume + 0.1));
+          break;
+        case "arrowdown":
+          e.preventDefault();
+          setVolume(Math.max(0, volume - 0.1));
+          break;
+      }
+    };
+
+    container.addEventListener("keydown", handleKeyDown);
+    return () => container.removeEventListener("keydown", handleKeyDown);
+  }, [containerRef, togglePlay, toggleFullscreen, toggleMute, seek, currentTime, duration, setVolume, volume]);
 
   // Idle detection for hiding controls
   useEffect(() => {
@@ -51,7 +180,9 @@ const PlayerInner = (props: AdvancedVideoPlayerProps) => {
   return (
     <div
       ref={containerRef}
-      className={`relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-border/50 group select-none transition-all duration-700 ${props.className || ''}`}
+      tabIndex={0}
+      onContextMenu={handleContextMenu}
+      className={`relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-border/50 group select-none transition-all duration-700 focus:outline-none ${props.className || ''}`}
       style={props.blurDataUrl ? {
         backgroundImage: `url(${props.blurDataUrl})`,
         backgroundSize: 'cover',
@@ -70,6 +201,76 @@ const PlayerInner = (props: AdvancedVideoPlayerProps) => {
         loop={props.loop}
       />
 
+      {/* Context Menu */}
+      {contextMenu && (
+        <div 
+          className="absolute z-100 bg-black/90 border border-white/10 rounded-md shadow-2xl py-2 min-w-[240px] text-[13px] pointer-events-auto backdrop-blur-md"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button 
+            className="w-full flex items-center justify-between text-left px-4 py-1.5 hover:bg-white/10 text-white/90 transition-colors"
+            onClick={() => {
+              if (videoRef.current) {
+                videoRef.current.loop = !videoRef.current.loop;
+              }
+              setContextMenu(null);
+            }}
+          >
+            <span>Loop</span>
+            {videoRef.current?.loop && <span className="text-white/60">✓</span>}
+          </button>
+          
+          <button 
+            className="w-full text-left px-4 py-1.5 hover:bg-white/10 text-white/90 transition-colors"
+            onClick={() => {
+              navigator.clipboard.writeText(window.location.href);
+              setContextMenu(null);
+            }}
+          >
+            Copy video URL
+          </button>
+          
+          <button 
+            className="w-full text-left px-4 py-1.5 hover:bg-white/10 text-white/90 transition-colors"
+            onClick={() => {
+              const url = new URL(window.location.href);
+              url.searchParams.set('t', Math.round(currentTime).toString());
+              navigator.clipboard.writeText(url.toString());
+              setContextMenu(null);
+            }}
+          >
+            Copy video URL at current time
+          </button>
+          
+          <div className="h-[1px] bg-white/10 my-1.5 mx-2" />
+          
+          <button 
+            className="w-full text-left px-4 py-1.5 hover:bg-white/10 text-white/90 transition-colors"
+            onClick={() => {
+              alert("Playback logs collected. Please send them to support.");
+              setContextMenu(null);
+            }}
+          >
+            Troubleshoot playback issue
+          </button>
+
+          <button 
+            className="w-full flex items-center justify-between text-left px-4 py-1.5 hover:bg-white/10 text-white/90 transition-colors"
+            onClick={() => {
+              setShowStats(!showStats);
+              setContextMenu(null);
+            }}
+          >
+            <span>Stats for nerds</span>
+            {showStats && <span className="text-white/60">✓</span>}
+          </button>
+        </div>
+      )}
+
+      {/* Stats Overlay */}
+      {showStats && <StatsOverlay onClose={() => setShowStats(false)} />}
+
       {/* Loading Overlay */}
       {isBuffering && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm pointer-events-none z-10 transition-opacity">
@@ -79,6 +280,14 @@ const PlayerInner = (props: AdvancedVideoPlayerProps) => {
 
       {/* Ad Overlay Layer */}
       {isAdPlaying && <AdOverlay />}
+
+      {/* Live Badge */}
+      {isLiveState && (
+        <div className={`absolute top-4 left-4 z-30 flex items-center gap-2 bg-black/60 px-2.5 py-1 rounded-md backdrop-blur-sm border border-white/10 transition-opacity duration-500 pointer-events-none ${isIdle && !isBuffering ? "opacity-0" : "opacity-100"}`}>
+          <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          <span className="text-white text-xs font-bold tracking-wider">LIVE</span>
+        </div>
+      )}
 
       {/* Player Controls */}
       <div 

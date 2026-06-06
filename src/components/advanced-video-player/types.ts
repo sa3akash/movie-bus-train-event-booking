@@ -16,6 +16,7 @@ export interface AdvancedVideoPlayerProps {
   startTime?: number;
   className?: string;
   style?: React.CSSProperties;
+  isLive?: boolean;
 
   // Comprehensive Shaka Player Configuration
   shakaConfig?: shaka.extern.PlayerConfiguration;
@@ -78,3 +79,78 @@ export interface AdvancedVideoPlayerProps {
   chapters?: { id?: string; title: string; startTime: number; endTime: number }[];
 }
 
+export interface ParsedThumbnail {
+  startTime: number;
+  endTime: number;
+  url: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface AdvancedPlayerContextType {
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  containerRef: React.RefObject<HTMLDivElement | null>;
+  
+  // State
+  isPlaying: boolean;
+  currentTime: number;
+  duration: number;
+  volume: number;
+  isMuted: boolean;
+  isFullscreen: boolean;
+  isBuffering: boolean;
+  playbackRate: number;
+  isPiP: boolean;
+  
+  // Quality / Tracks
+  videoTracks: any[];
+  selectedTrackId: string | null;
+  activeTrackHeight: number | null;
+  
+  // Subtitles / Captions
+  textTracks: any[];
+  selectedTextTrackId: string | null;
+  isTextTrackVisible: boolean;
+  
+  // Audio Languages
+  audioLanguages: any[];
+  selectedAudioLanguage: string;
+  
+  // Chapters
+  chapters: any[];
+  
+  // Live
+  isLiveState: boolean;
+  seekRange: { start: number; end: number };
+  
+  // Ad State
+  isAdPlaying: boolean;
+  canSkipAd: boolean;
+  adTimeRemaining: number;
+  adTimeUntilSkippable: number;
+  adTitle: string;
+  adCurrentTime: number;
+  adDuration: number;
+  
+  // Actions
+  togglePlay: () => void;
+  seek: (time: number) => void;
+  setVolume: (vol: number) => void;
+  toggleMute: () => void;
+  toggleFullscreen: () => void;
+  togglePiP: () => Promise<void>;
+  setPlaybackRate: (rate: number) => void;
+  selectTrack: (trackId: string | null) => void;
+  skipAd: () => void;
+  initializePlayer: (props: AdvancedVideoPlayerProps) => Promise<void>;
+  getThumbnail: (time: number) => Promise<any | null>;
+  loadVttStoryboard: (url: string) => Promise<void>;
+  getStats: () => any | null;
+  setCurrentTime: (time: number) => void;
+  toggleTextTrackVisibility: () => void;
+  selectTextTrack: (trackId: string | null) => void;
+  selectAudioLanguage: (language: string) => void;
+  goToLive: () => void;
+}
