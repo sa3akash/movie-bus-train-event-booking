@@ -13,7 +13,8 @@ const PlayerInner = (props: AdvancedVideoPlayerProps) => {
 
   useEffect(() => {
     initializePlayer(props);
-  }, [props.manifestUrl, props.storyboardUrl, props.ads, props.shakaConfig, props.drm, props.buffering, props.retryParameters, props.lowLatencyMode, props.licenseRequestFilter, props.licenseResponseFilter, initializePlayer, props]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.manifestUrl, props.storyboardUrl, props.videoId, initializePlayer]);
 
   // Idle detection for hiding controls
   useEffect(() => {

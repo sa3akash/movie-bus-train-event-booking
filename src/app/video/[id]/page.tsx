@@ -256,6 +256,68 @@ const VideoPlayerPage = () => {
                 },
               }}
               // lowLatencyMode={true} // Uncomment if this is a live stream
+              chapters={[
+                {
+                  id: "1",
+                  title: "helo",
+                  startTime: 0,
+                  endTime: 5,
+                },
+                {
+                  id: "2",
+                  title: "helo 2",
+                  startTime: 5,
+                  endTime: 10,
+                },
+                {
+                  id: "3",
+                  title: "helo 3",
+                  startTime: 10,
+                  endTime: 15,
+                },
+                {
+                  id: "4",
+                  title: "helo 4",
+                  startTime: 15,
+                  endTime: 20,
+                },
+                {
+                  id: "5",
+                  title: "helo 5",
+                  startTime: 20,
+                  endTime: 25,
+                },
+                {
+                  id: "6",
+                  title: "helo 6",
+                  startTime: 25,
+                  endTime: 30,
+                },
+                {
+                  id: "7",
+                  title: "helo 7",
+                  startTime: 30,
+                  endTime: 35,
+                },
+                {
+                  id: "8",
+                  title: "helo 8",
+                  startTime: 35,
+                  endTime: 40,
+                },
+                {
+                  id: "9",
+                  title: "helo 9",
+                  startTime: 40,
+                  endTime: 45,
+                },
+                {
+                  id: "10",
+                  title: "helo 10",
+                  startTime: 45,
+                  endTime: 56,
+                },
+              ]}
             />
           </div>
         ) : (

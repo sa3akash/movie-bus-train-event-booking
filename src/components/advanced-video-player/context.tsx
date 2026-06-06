@@ -26,6 +26,18 @@ interface AdvancedPlayerContextType {
   selectedTrackId: string | null;
   activeTrackHeight: number | null;
   
+  // Subtitles / Captions
+  textTracks: any[];
+  selectedTextTrackId: string | null;
+  isTextTrackVisible: boolean;
+  
+  // Audio Languages
+  audioLanguages: any[];
+  selectedAudioLanguage: string;
+  
+  // Chapters
+  chapters: any[];
+  
   // Ad State
   isAdPlaying: boolean;
   canSkipAd: boolean;
@@ -48,6 +60,9 @@ interface AdvancedPlayerContextType {
   initializePlayer: (props: AdvancedVideoPlayerProps) => Promise<void>;
   getThumbnail: (time: number) => Promise<any | null>;
   setCurrentTime: (time: number) => void;
+  toggleTextTrackVisibility: () => void;
+  selectTextTrack: (trackId: string | null) => void;
+  selectAudioLanguage: (language: string) => void;
 }
 
 const AdvancedPlayerContext = createContext<AdvancedPlayerContextType | null>(null);
@@ -78,6 +93,18 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
   const [activeTrackHeight, setActiveTrackHeight] = useState<number | null>(null);
 
+  // Subtitles / Captions state
+  const [textTracks, setTextTracks] = useState<any[]>([]);
+  const [selectedTextTrackId, setSelectedTextTrackId] = useState<string | null>(null);
+  const [isTextTrackVisible, setIsTextTrackVisible] = useState(false);
+
+  // Audio Languages state
+  const [audioLanguages, setAudioLanguages] = useState<any[]>([]);
+  const [selectedAudioLanguage, setSelectedAudioLanguage] = useState<string>("auto");
+
+  // Chapters state
+  const [chapters, setChapters] = useState<any[]>([]);
+
   // Ad state
   const [isAdPlaying, setIsAdPlaying] = useState(false);
   const isAdPlayingRef = useRef(false);
@@ -87,6 +114,16 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
   const [adTitle, setAdTitle] = useState("");
   const [adCurrentTime, setAdCurrentTime] = useState(0);
   const [adDuration, setAdDuration] = useState(0);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.destroy();
+        playerRef.current = null;
+      }
+    };
+  }, []);
   const currentAdRef = useRef<any>(null);
 
   interface ParsedThumbnail {
@@ -204,6 +241,42 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
         playerRef.current.selectVariantTrack(track, true); // true = clear buffer
         setSelectedTrackId(trackId);
       }
+    }
+  }, []);
+
+  const toggleTextTrackVisibility = useCallback(() => {
+    if (!playerRef.current) return;
+    const isVisible = playerRef.current.isTextTrackVisible();
+    playerRef.current.setTextTrackVisibility(!isVisible);
+    setIsTextTrackVisible(!isVisible);
+  }, []);
+
+  const selectTextTrack = useCallback((trackId: string | null) => {
+    if (!playerRef.current) return;
+    if (trackId === null) {
+      playerRef.current.setTextTrackVisibility(false);
+      setSelectedTextTrackId(null);
+      setIsTextTrackVisible(false);
+    } else {
+      const track = playerRef.current.getTextTracks().find((t: any) => t.id.toString() === trackId);
+      if (track) {
+        playerRef.current.selectTextTrack(track);
+        playerRef.current.setTextTrackVisibility(true);
+        setSelectedTextTrackId(trackId);
+        setIsTextTrackVisible(true);
+      }
+    }
+  }, []);
+
+  const selectAudioLanguage = useCallback((language: string) => {
+    if (!playerRef.current) return;
+    if (language === "auto") {
+      // Revert to default audio language logic
+      playerRef.current.selectAudioLanguage('');
+      setSelectedAudioLanguage("auto");
+    } else {
+      playerRef.current.selectAudioLanguage(language);
+      setSelectedAudioLanguage(language);
     }
   }, []);
 
@@ -521,6 +594,42 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
       
       const activeTrack = tracks.find((t: any) => t.active);
       if (activeTrack) setActiveTrackHeight(activeTrack.height);
+
+      // Sync Text Tracks
+      const allTextTracks = player.getTextTracks();
+      setTextTracks(allTextTracks);
+      const activeTextTrack = allTextTracks.find((t: any) => t.active);
+      if (activeTextTrack) setSelectedTextTrackId(activeTextTrack.id.toString());
+      setIsTextTrackVisible(player.isTextTrackVisible());
+
+      // Sync Audio Languages
+      const uniqueAudioLangs = Array.from(new Set(tracks.map((t: any) => t.language).filter(Boolean)));
+      setAudioLanguages(uniqueAudioLangs.map(lang => ({ language: lang })));
+      if (activeTrack && activeTrack.language) {
+         setSelectedAudioLanguage(activeTrack.language);
+      }
+
+      // Sync Chapters
+      try {
+        const parsedChapters = await player.getChaptersAsync();
+        if (parsedChapters && parsedChapters.length > 0) {
+          setChapters(parsedChapters);
+        } else if (props.chapters) {
+          setChapters(props.chapters);
+        }
+      } catch (e) {
+        if (props.chapters) setChapters(props.chapters);
+      }
+
+      // Listen to trackschanged event for dynamic tracks (like side-loaded VTT)
+      player.addEventListener('trackschanged', () => {
+         const updatedTextTracks = player.getTextTracks();
+         setTextTracks(updatedTextTracks);
+         
+         const updatedVariantTracks = player.getVariantTracks();
+         const updatedAudioLangs = Array.from(new Set(updatedVariantTracks.map((t: any) => t.language).filter(Boolean)));
+         setAudioLanguages(updatedAudioLangs.map(lang => ({ language: lang })));
+      });
       
       if (storyboardUrl) {
         if (storyboardUrl.endsWith('.vtt')) {
@@ -752,6 +861,12 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
         videoTracks,
         selectedTrackId,
         activeTrackHeight,
+        textTracks,
+        selectedTextTrackId,
+        isTextTrackVisible,
+        audioLanguages,
+        selectedAudioLanguage,
+        chapters,
         isAdPlaying,
         canSkipAd,
         adTimeRemaining,
@@ -770,7 +885,10 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
         skipAd,
         initializePlayer,
         getThumbnail,
-        setCurrentTime
+        setCurrentTime,
+        toggleTextTrackVisibility,
+        selectTextTrack,
+        selectAudioLanguage
       }}
     >
       {children}

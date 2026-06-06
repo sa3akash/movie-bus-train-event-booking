@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAdvancedPlayer } from "./context";
 import { Settings, ChevronRight, ChevronLeft, Check } from "lucide-react";
 
-type MenuState = "main" | "quality" | "speed";
+type MenuState = "main" | "quality" | "speed" | "audio" | "subtitles";
 
 export const SettingsMenu = () => {
   const {
@@ -14,6 +14,13 @@ export const SettingsMenu = () => {
     selectTrack,
     playbackRate,
     setPlaybackRate,
+    textTracks,
+    selectedTextTrackId,
+    selectTextTrack,
+    isTextTrackVisible,
+    audioLanguages,
+    selectedAudioLanguage,
+    selectAudioLanguage,
   } = useAdvancedPlayer();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -99,6 +106,34 @@ export const SettingsMenu = () => {
                   <ChevronRight className="w-4 h-4" />
                 </div>
               </button>
+
+              {audioLanguages.length > 1 && (
+                <button
+                  onClick={() => setMenuState("audio")}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors"
+                >
+                  <span>Audio track</span>
+                  <div className="flex items-center text-white/50">
+                    <span className="mr-2 text-xs">{selectedAudioLanguage === "auto" ? "Auto" : selectedAudioLanguage}</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                </button>
+              )}
+
+              {textTracks.length > 0 && (
+                <button
+                  onClick={() => setMenuState("subtitles")}
+                  className="flex items-center justify-between px-4 py-3 hover:bg-white/10 transition-colors"
+                >
+                  <span>Subtitles/CC</span>
+                  <div className="flex items-center text-white/50">
+                    <span className="mr-2 text-xs">
+                      {!isTextTrackVisible || !selectedTextTrackId ? "Off" : textTracks.find(t => t.id.toString() === selectedTextTrackId)?.language || "On"}
+                    </span>
+                    <ChevronRight className="w-4 h-4" />
+                  </div>
+                </button>
+              )}
             </div>
           )}
 
@@ -174,6 +209,98 @@ export const SettingsMenu = () => {
                       {playbackRate === speed && <Check className="w-4 h-4" />}
                     </div>
                     <span>{speed === 1 ? "Normal" : `${speed}x`}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Audio Submenu */}
+          {menuState === "audio" && (
+            <div className="flex flex-col py-2 animate-in slide-in-from-right-4 duration-200">
+              <button
+                onClick={() => setMenuState("main")}
+                className="flex items-center px-4 py-3 border-b border-white/10 hover:bg-white/10 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                <span>Audio track</span>
+              </button>
+              
+              <div className="max-h-60 overflow-y-auto">
+                <button
+                  onClick={() => {
+                    selectAudioLanguage("auto");
+                    setIsOpen(false);
+                    setTimeout(() => setMenuState("main"), 200);
+                  }}
+                  className="w-full flex items-center px-4 py-3 hover:bg-white/10 transition-colors"
+                >
+                  <div className="w-6 flex items-center justify-center">
+                    {selectedAudioLanguage === "auto" && <Check className="w-4 h-4" />}
+                  </div>
+                  <span>Auto</span>
+                </button>
+
+                {audioLanguages.map((lang) => (
+                  <button
+                    key={lang.language}
+                    onClick={() => {
+                      selectAudioLanguage(lang.language);
+                      setIsOpen(false);
+                      setTimeout(() => setMenuState("main"), 200);
+                    }}
+                    className="w-full flex items-center px-4 py-3 hover:bg-white/10 transition-colors"
+                  >
+                    <div className="w-6 flex items-center justify-center">
+                      {selectedAudioLanguage === lang.language && <Check className="w-4 h-4" />}
+                    </div>
+                    <span>{lang.language}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Subtitles Submenu */}
+          {menuState === "subtitles" && (
+            <div className="flex flex-col py-2 animate-in slide-in-from-right-4 duration-200">
+              <button
+                onClick={() => setMenuState("main")}
+                className="flex items-center px-4 py-3 border-b border-white/10 hover:bg-white/10 transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4 mr-2" />
+                <span>Subtitles/CC</span>
+              </button>
+              
+              <div className="max-h-60 overflow-y-auto">
+                <button
+                  onClick={() => {
+                    selectTextTrack(null);
+                    setIsOpen(false);
+                    setTimeout(() => setMenuState("main"), 200);
+                  }}
+                  className="w-full flex items-center px-4 py-3 hover:bg-white/10 transition-colors"
+                >
+                  <div className="w-6 flex items-center justify-center">
+                    {(!isTextTrackVisible || !selectedTextTrackId) && <Check className="w-4 h-4" />}
+                  </div>
+                  <span>Off</span>
+                </button>
+
+                {textTracks.map((track) => (
+                  <button
+                    key={track.id}
+                    onClick={() => {
+                      selectTextTrack(track.id.toString());
+                      setIsOpen(false);
+                      setTimeout(() => setMenuState("main"), 200);
+                    }}
+                    className="w-full flex items-center px-4 py-3 hover:bg-white/10 transition-colors"
+                  >
+                    <div className="w-6 flex items-center justify-center">
+                      {(isTextTrackVisible && selectedTextTrackId === track.id.toString()) && <Check className="w-4 h-4" />}
+                    </div>
+                    <span>{track.label || track.language || `Track ${track.id}`}</span>
                   </button>
                 ))}
               </div>

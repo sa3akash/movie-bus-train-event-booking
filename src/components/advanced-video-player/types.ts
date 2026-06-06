@@ -73,5 +73,8 @@ export interface AdvancedVideoPlayerProps {
   onAdStart?: (adInfo: any) => void;
   onAdEnd?: () => void;
   onError?: (error: shaka.util.Error) => void;
+
+  // Fallback Chapters (if not provided by manifest/VTT)
+  chapters?: { id?: string; title: string; startTime: number; endTime: number }[];
 }
 

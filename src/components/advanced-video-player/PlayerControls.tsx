@@ -7,10 +7,10 @@ import { TimeDisplay } from "./TimeDisplay";
 import { ProgressBar } from "./ProgressBar";
 import { SettingsMenu } from "./SettingsMenu";
 import { useAdvancedPlayer } from "./context";
-import { Maximize, Minimize, PictureInPicture } from "lucide-react";
+import { Maximize, Minimize, PictureInPicture, Subtitles } from "lucide-react";
 
 export const PlayerControls = () => {
-  const { toggleFullscreen, isFullscreen, isAdPlaying, togglePiP } = useAdvancedPlayer();
+  const { toggleFullscreen, isFullscreen, isAdPlaying, togglePiP, textTracks, isTextTrackVisible, toggleTextTrackVisibility } = useAdvancedPlayer();
 
   return (
     <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-auto flex flex-col gap-2">
@@ -29,6 +29,16 @@ export const PlayerControls = () => {
 
         {/* Right Side: Fullscreen, PiP, Settings */}
         <div className="flex items-center gap-2 md:gap-4">
+          {textTracks.length > 0 && (
+            <button
+              onClick={toggleTextTrackVisibility}
+              className={`p-1.5 transition-colors rounded-full hover:bg-white/10 ${isTextTrackVisible ? 'text-white' : 'text-white/50 hover:text-white/80'}`}
+              title="Closed Captions"
+            >
+              <Subtitles className="w-5 h-5" />
+            </button>
+          )}
+          
           <SettingsMenu />
           
           <button

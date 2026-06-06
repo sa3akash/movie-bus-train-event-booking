@@ -4,11 +4,12 @@ import React, { useRef, useState, useEffect } from "react";
 import { useAdvancedPlayer } from "./context";
 
 export const ProgressBar = () => {
-  const { currentTime, duration, seek, isAdPlaying, adCurrentTime, adDuration, getThumbnail } = useAdvancedPlayer();
+  const { currentTime, duration, seek, isAdPlaying, adCurrentTime, adDuration, getThumbnail, chapters } = useAdvancedPlayer();
   const progressBarRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [hoverPosition, setHoverPosition] = useState<number | null>(null);
   const [hoverTimeValue, setHoverTimeValue] = useState<number>(0);
+  const [hoverChapterTitle, setHoverChapterTitle] = useState<string | null>(null);
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
   const [thumbnailStyle, setThumbnailStyle] = useState<React.CSSProperties>({});
   const [thumbWidth, setThumbWidth] = useState<number>(160);
@@ -49,6 +50,16 @@ export const ProgressBar = () => {
       if (duration > 0) {
         const hoverTime = (newPercent / 100) * duration;
         setHoverTimeValue(hoverTime);
+        
+        if (chapters && chapters.length > 0) {
+          const currentChapter = chapters.find(c => hoverTime >= c.startTime && hoverTime <= (c.endTime || duration));
+          if (currentChapter) {
+            setHoverChapterTitle(currentChapter.title);
+          } else {
+            setHoverChapterTitle(null);
+          }
+        }
+        
         getThumbnail(hoverTime).then((thumb) => {
           if (thumb) {
             setThumbnailUrl(thumb.uris[0]);
@@ -142,13 +153,28 @@ export const ProgressBar = () => {
                 />
               </div>
             )}
-            <div className="bg-black/90 px-2 py-0.5 rounded text-white text-xs font-semibold tracking-wide shadow-md">
-              {formatTime(hoverTimeValue)}
+            <div className="bg-black/90 px-2 py-1 rounded flex flex-col items-center shadow-md">
+              {hoverChapterTitle && <span className="text-white/80 text-[10px] uppercase mb-0.5 font-bold tracking-wider max-w-[140px] truncate">{hoverChapterTitle}</span>}
+              <span className="text-white text-xs font-semibold tracking-wide">{formatTime(hoverTimeValue)}</span>
             </div>
           </div>
         </>
       )}
       
+      {/* Chapter Gaps */}
+      {!isAdPlaying && duration > 0 && chapters && chapters.map((chapter, i) => {
+        if (i === chapters.length - 1) return null;
+        const leftPercent = (chapter.endTime / duration) * 100;
+        if (leftPercent >= 100 || leftPercent <= 0) return null;
+        return (
+          <div 
+            key={`chapter-${i}`}
+            className="absolute top-0 bottom-0 w-[2px] bg-black/60 z-10 pointer-events-none"
+            style={{ left: `${leftPercent}%` }}
+          />
+        );
+      })}
+
       {/* Current progress bar */}
       <div 
         className={`absolute top-0 left-0 h-full ${isAdPlaying ? 'bg-yellow-400' : 'bg-primary'} rounded-full pointer-events-none`}
