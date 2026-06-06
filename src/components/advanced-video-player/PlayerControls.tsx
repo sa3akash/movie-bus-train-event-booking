@@ -5,11 +5,12 @@ import { PlaybackButtons } from "./PlaybackButtons";
 import { VolumeControl } from "./VolumeControl";
 import { TimeDisplay } from "./TimeDisplay";
 import { ProgressBar } from "./ProgressBar";
+import { SettingsMenu } from "./SettingsMenu";
 import { useAdvancedPlayer } from "@/context/AdvancedPlayerContext";
-import { Maximize, Minimize, Settings } from "lucide-react";
+import { Maximize, Minimize, PictureInPicture } from "lucide-react";
 
 export const PlayerControls = () => {
-  const { toggleFullscreen, isFullscreen, isAdPlaying } = useAdvancedPlayer();
+  const { toggleFullscreen, isFullscreen, isAdPlaying, togglePiP } = useAdvancedPlayer();
 
   return (
     <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-auto flex flex-col gap-2">
@@ -26,14 +27,18 @@ export const PlayerControls = () => {
           <TimeDisplay />
         </div>
 
-        {/* Right Side: Fullscreen, Settings */}
-        <div className="flex items-center gap-4">
+        {/* Right Side: Fullscreen, PiP, Settings */}
+        <div className="flex items-center gap-2 md:gap-4">
+          <SettingsMenu />
+          
           <button
+            onClick={togglePiP}
             className="p-1.5 text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/10"
-            title="Settings"
+            title="Picture-in-Picture"
           >
-            <Settings className="w-5 h-5" />
+            <PictureInPicture className="w-5 h-5" />
           </button>
+
           <button
             onClick={toggleFullscreen}
             className="p-1.5 text-white/80 hover:text-white transition-colors rounded-full hover:bg-white/10"

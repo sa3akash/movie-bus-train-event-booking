@@ -25,6 +25,10 @@ interface VideoData {
   duration: string | null;
   createdAt: string;
   resolutions: string[] | null;
+  thumbnails: string[] | null;
+  storyboardUrl: string | null;
+  blurhashes: string[] | null;
+  blurDataUrls: string[] | null;
 }
 
 const VideoPlayerPage = () => {
@@ -87,6 +91,10 @@ const VideoPlayerPage = () => {
             duration: "0",
             createdAt: new Date().toISOString(),
             resolutions: ["OFFLINE"],
+            thumbnails: null,
+            storyboardUrl: null,
+            blurhashes: null,
+            blurDataUrls: null,
           });
         }
       } else {
@@ -161,6 +169,9 @@ const VideoPlayerPage = () => {
             <AdvancedPlayer
               manifestUrl={manifestUrl}
               videoId={params.id as string}
+              posterUrl={video.thumbnails?.[0]}
+              blurDataUrl={video.blurDataUrls?.[0]}
+              storyboardUrl={video.storyboardUrl || undefined}
             />
           </div>
         ) : (

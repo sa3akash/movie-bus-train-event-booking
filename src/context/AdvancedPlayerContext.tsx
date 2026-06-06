@@ -15,6 +15,13 @@ interface AdvancedPlayerContextType {
   isMuted: boolean;
   isFullscreen: boolean;
   isBuffering: boolean;
+  playbackRate: number;
+  isPiP: boolean;
+  
+  // Quality / Tracks
+  videoTracks: any[];
+  selectedTrackId: string | null;
+  activeTrackHeight: number | null;
   
   // Ad State
   isAdPlaying: boolean;
@@ -31,8 +38,12 @@ interface AdvancedPlayerContextType {
   setVolume: (vol: number) => void;
   toggleMute: () => void;
   toggleFullscreen: () => void;
+  togglePiP: () => Promise<void>;
+  setPlaybackRate: (rate: number) => void;
+  selectTrack: (trackId: string | null) => void;
   skipAd: () => void;
-  initializePlayer: (manifestUrl: string, videoId: string) => Promise<void>;
+  initializePlayer: (manifestUrl: string, videoId: string, storyboardUrl?: string) => Promise<void>;
+  getThumbnail: (time: number) => Promise<any | null>;
 }
 
 const AdvancedPlayerContext = createContext<AdvancedPlayerContextType | null>(null);
@@ -54,6 +65,13 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [playbackRate, setPlaybackRateState] = useState(1);
+  const [isPiP, setIsPiP] = useState(false);
+
+  // Quality / Tracks state
+  const [videoTracks, setVideoTracks] = useState<any[]>([]);
+  const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
+  const [activeTrackHeight, setActiveTrackHeight] = useState<number | null>(null);
 
   // Ad state
   const [isAdPlaying, setIsAdPlaying] = useState(false);
@@ -65,6 +83,27 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
   const [adCurrentTime, setAdCurrentTime] = useState(0);
   const [adDuration, setAdDuration] = useState(0);
   const currentAdRef = useRef<any>(null);
+
+  interface ParsedThumbnail {
+    startTime: number;
+    endTime: number;
+    url: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }
+  const thumbnailsRef = useRef<ParsedThumbnail[]>([]);
+
+  // VTT Time Parser (HH:MM:SS.mmm to seconds)
+  const parseVttTime = (timeStr: string) => {
+    const parts = timeStr.split(':');
+    if (parts.length === 3) {
+      const [h, m, s] = parts;
+      return parseInt(h) * 3600 + parseInt(m) * 60 + parseFloat(s);
+    }
+    return 0;
+  };
 
   const skipAd = useCallback(() => {
     if (currentAdRef.current && isAdPlaying) {
@@ -125,6 +164,43 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     }
   }, []);
 
+  const togglePiP = useCallback(async () => {
+    if (!videoRef.current) return;
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await videoRef.current.requestPictureInPicture();
+      }
+    } catch (err) {
+      console.error("PiP toggle failed:", err);
+    }
+  }, []);
+
+  const setPlaybackRate = useCallback((rate: number) => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = rate;
+      setPlaybackRateState(rate);
+    }
+  }, []);
+
+  const selectTrack = useCallback((trackId: string | null) => {
+    if (!playerRef.current) return;
+    if (trackId === null) {
+      // Enable auto ABR
+      playerRef.current.configure({ abr: { enabled: true } });
+      setSelectedTrackId(null);
+    } else {
+      // Find the track and select it
+      const track = playerRef.current.getVariantTracks().find((t: any) => t.id.toString() === trackId);
+      if (track) {
+        playerRef.current.configure({ abr: { enabled: false } });
+        playerRef.current.selectVariantTrack(track, true); // true = clear buffer
+        setSelectedTrackId(trackId);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
@@ -133,7 +209,7 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
   }, []);
 
-  const initializePlayer = useCallback(async (manifestUrl: string, videoId: string) => {
+  const initializePlayer = useCallback(async (manifestUrl: string, videoId: string, storyboardUrl?: string) => {
     if (!shaka || !isSupported || !videoRef.current || !containerRef.current) return;
 
     // Destroy existing instance if present
@@ -150,6 +226,13 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     player.addEventListener('buffering', (event: any) => {
       setIsBuffering(event.buffering);
     });
+
+    const syncActiveTrack = () => {
+      const activeTrack = player.getVariantTracks().find((t: any) => t.active);
+      if (activeTrack) setActiveTrackHeight(activeTrack.height);
+    };
+    player.addEventListener('adaptation', syncActiveTrack);
+    player.addEventListener('variantchanged', syncActiveTrack);
 
     // Custom Interstitials AdManager Setup
     const adManager = player.getAdManager();
@@ -324,6 +407,54 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
 
     try {
       await player.load(manifestUrl);
+      
+      // Load available tracks
+      const tracks = player.getVariantTracks();
+      setVideoTracks(tracks);
+      
+      const activeTrack = tracks.find((t: any) => t.active);
+      if (activeTrack) setActiveTrackHeight(activeTrack.height);
+      
+      if (storyboardUrl) {
+        if (storyboardUrl.endsWith('.vtt')) {
+          try {
+            const vttRes = await fetch(storyboardUrl);
+            const vttText = await vttRes.text();
+            
+            const baseUrl = storyboardUrl.substring(0, storyboardUrl.lastIndexOf('/') + 1);
+            const blocks = vttText.split('\n\n');
+            const parsedThumbnails: ParsedThumbnail[] = [];
+            
+            for (const block of blocks) {
+              const lines = block.split('\n').filter(l => l.trim() !== '' && !l.includes('WEBVTT'));
+              if (lines.length >= 2) {
+                const timeMatch = lines[0].match(/(.*) --> (.*)/);
+                if (timeMatch) {
+                  const startTime = parseVttTime(timeMatch[1]);
+                  const endTime = parseVttTime(timeMatch[2]);
+                  
+                  const urlLine = lines[1];
+                  const [filename, hash] = urlLine.split('#xywh=');
+                  if (hash) {
+                    const [x, y, w, h] = hash.split(',').map(Number);
+                    parsedThumbnails.push({
+                      startTime,
+                      endTime,
+                      url: baseUrl + filename,
+                      x, y, w, h
+                    });
+                  }
+                }
+              }
+            }
+            thumbnailsRef.current = parsedThumbnails;
+          } catch (e) {
+            console.warn("Failed to fetch and parse storyboard VTT", e);
+          }
+        } else {
+          console.warn("Skipping legacy storyboard URL (not a VTT file):", storyboardUrl);
+        }
+      }
     } catch (err: any) {
       if (err.code === 7000) {
         console.warn("Load interrupted (likely due to fast re-mounting).");
@@ -333,6 +464,22 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     }
 
   }, [shaka, isSupported]);
+
+  const getThumbnail = useCallback(async (time: number) => {
+    if (thumbnailsRef.current.length > 0) {
+      const thumb = thumbnailsRef.current.find(t => time >= t.startTime && time <= t.endTime);
+      if (thumb) {
+        return {
+          uris: [thumb.url],
+          imageWidth: thumb.w,
+          imageHeight: thumb.h,
+          positionX: thumb.x,
+          positionY: thumb.y,
+        };
+      }
+    }
+    return null;
+  }, []);
 
   // Video Element Event Listeners
   useEffect(() => {
@@ -345,6 +492,9 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
       }
     };
     const handleDurationChange = () => setDuration(video.duration);
+    const handleRateChange = () => setPlaybackRateState(video.playbackRate);
+    const handleEnterPiP = () => setIsPiP(true);
+    const handleLeavePiP = () => setIsPiP(false);
     const handlePlay = () => {
       if (isAdPlayingRef.current) {
         // Prevent main video from playing during an ad
@@ -364,6 +514,9 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
     video.addEventListener("play", handlePlay);
     video.addEventListener("pause", handlePause);
     video.addEventListener("volumechange", handleVolumeChange);
+    video.addEventListener("ratechange", handleRateChange);
+    video.addEventListener("enterpictureinpicture", handleEnterPiP);
+    video.addEventListener("leavepictureinpicture", handleLeavePiP);
 
     return () => {
       video.removeEventListener("timeupdate", handleTimeUpdate);
@@ -371,6 +524,9 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
       video.removeEventListener("play", handlePlay);
       video.removeEventListener("pause", handlePause);
       video.removeEventListener("volumechange", handleVolumeChange);
+      video.removeEventListener("ratechange", handleRateChange);
+      video.removeEventListener("enterpictureinpicture", handleEnterPiP);
+      video.removeEventListener("leavepictureinpicture", handleLeavePiP);
     };
   }, []);
 
@@ -476,6 +632,11 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
         isMuted,
         isFullscreen,
         isBuffering,
+        playbackRate,
+        isPiP,
+        videoTracks,
+        selectedTrackId,
+        activeTrackHeight,
         isAdPlaying,
         canSkipAd,
         adTimeRemaining,
@@ -488,8 +649,12 @@ export const AdvancedPlayerProvider = ({ children }: { children: ReactNode }) =>
         setVolume,
         toggleMute,
         toggleFullscreen,
+        togglePiP,
+        setPlaybackRate,
+        selectTrack,
         skipAd,
         initializePlayer,
+        getThumbnail,
       }}
     >
       {children}

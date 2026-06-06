@@ -7,7 +7,7 @@ import { db } from "../db";
 import { videos } from "../db/schemas/video";
 import { eq } from "drizzle-orm";
 import { downloadFromS3, uploadDirectoryToS3, bucket } from "./transcoder/s3";
-import { probeVideo, getTargetResolutions, extractAudio, transcodeResolution, generateThumbnails, generateStoryboardSprite, getThumbnailTimestamps, generateStoryboardVtt } from "./transcoder/ffmpeg";
+import { probeVideo, getTargetResolutions, extractAudio, transcodeResolution, generateThumbnails, generateStoryboardSprite, getThumbnailTimestamps, generateStoryboardVtt, generateBlurData } from "./transcoder/ffmpeg";
 import { runShakaPackager } from "./transcoder/shaka";
 
 const redisConnection = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
@@ -32,6 +32,9 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
       
       await fs.mkdir(workDir, { recursive: true });
       await fs.mkdir(outputDir, { recursive: true });
+      
+      const thumbnailsDir = path.join(outputDir, "thumbnails");
+      await fs.mkdir(thumbnailsDir, { recursive: true });
 
       // Step 1: Download Original
       job.log("Downloading original video from S3...");
@@ -42,24 +45,43 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
       const metadata = await probeVideo(originalPath);
       const videoStream = metadata.streams.find((s) => s.codec_type === "video");
       const height = videoStream?.height || 0;
-      const durationFloat = parseFloat(metadata.format.duration || "0");
+      const durationFloat = parseFloat(`${metadata.format.duration}` || "0");
       const duration = String(durationFloat);
       const targetRes = getTargetResolutions(height);
 
       // Step 2.5: Generate Thumbnails & Storyboard
       job.log("Generating thumbnails and storyboard...");
-      const thumbnailTimestamps = getThumbnailTimestamps(4);
-      const thumbnailFiles = await generateThumbnails(originalPath, outputDir, thumbnailTimestamps);
+      const thumbnailTimestamps = getThumbnailTimestamps(durationFloat, 4);
+      const thumbnailFiles = await generateThumbnails(originalPath, thumbnailsDir, thumbnailTimestamps);
+      
+      job.log("Generating blur data from thumbnails...");
+      const blurDataPromises = thumbnailFiles.map(f => generateBlurData(f));
+      const blurDataResults = await Promise.all(blurDataPromises);
+      
+      const blurhashes = blurDataResults.map(d => d.blurhash);
+      const blurDataUrls = blurDataResults.map(d => d.blurDataUrl);
       
       const storyboardPrefix = "storyboard";
-      const storyboardPattern = path.join(outputDir, `${storyboardPrefix}-%04d.jpg`);
-      const vttPath = path.join(outputDir, "storyboard.vtt");
+      // Ensure forward slashes for ffmpeg image2 pattern to prevent \t escaping issues on Windows
+      const storyboardPattern = path.join(thumbnailsDir, `${storyboardPrefix}-%04d.jpg`).replace(/\\/g, "/");
+      const vttPath = path.join(thumbnailsDir, "storyboard.vtt");
       
-      const interval = 10;
+      const interval = Math.max(1, Math.min(10, Math.floor(durationFloat / 100)));
       const columns = 10;
       const rows = 10;
-      const tileWidth = 160;
-      const tileHeight = 90;
+      
+      const videoWidth = videoStream?.width || 1280;
+      const videoHeight = videoStream?.height || 720;
+      const aspectRatio = videoWidth / videoHeight;
+      
+      let tileWidth, tileHeight;
+      if (aspectRatio >= 1) { // Landscape or Square
+        tileWidth = 160;
+        tileHeight = Math.round(160 / aspectRatio);
+      } else { // Portrait
+        tileHeight = 160;
+        tileWidth = Math.round(160 * aspectRatio);
+      }
 
       await generateStoryboardSprite(originalPath, storyboardPattern, interval, tileWidth, tileHeight, columns, rows);
       await generateStoryboardVtt(durationFloat, interval, columns, rows, tileWidth, tileHeight, vttPath, storyboardPrefix);
@@ -110,8 +132,10 @@ export const transcodeWorker = globalForWorker.transcodeWorker ?? new Worker(
         hlsUrl: `${publicEndpoint}/${bucket}/${s3Prefix}/master.m3u8`,
         dashUrl: `${publicEndpoint}/${bucket}/${s3Prefix}/manifest.mpd`,
         resolutions: generatedResolutions,
-        thumbnails: thumbnailFiles.map(f => `${publicEndpoint}/${bucket}/${s3Prefix}/${path.basename(f)}`),
-        storyboardUrl: `${publicEndpoint}/${bucket}/${s3Prefix}/storyboard.vtt`,
+        thumbnails: thumbnailFiles.map(f => `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/${path.basename(f)}`),
+        blurhashes,
+        blurDataUrls,
+        storyboardUrl: `${publicEndpoint}/${bucket}/${s3Prefix}/thumbnails/storyboard.vtt`,
         duration,
       }).where(eq(videos.id, videoId));
 

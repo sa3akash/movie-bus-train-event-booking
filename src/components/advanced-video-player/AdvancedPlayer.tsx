@@ -10,15 +10,17 @@ interface AdvancedPlayerProps {
   manifestUrl: string;
   videoId: string;
   posterUrl?: string;
+  storyboardUrl?: string;
+  blurDataUrl?: string;
 }
 
-const PlayerInner = ({ manifestUrl, videoId, posterUrl }: AdvancedPlayerProps) => {
+const PlayerInner = ({ manifestUrl, videoId, posterUrl, storyboardUrl, blurDataUrl }: AdvancedPlayerProps) => {
   const { videoRef, containerRef, initializePlayer, isBuffering, isAdPlaying } = useAdvancedPlayer();
   const [isIdle, setIsIdle] = useState(false);
 
   useEffect(() => {
-    initializePlayer(manifestUrl, videoId);
-  }, [manifestUrl, videoId, initializePlayer]);
+    initializePlayer(manifestUrl, videoId, storyboardUrl);
+  }, [manifestUrl, videoId, storyboardUrl, initializePlayer]);
 
   // Idle detection for hiding controls
   useEffect(() => {
@@ -55,7 +57,12 @@ const PlayerInner = ({ manifestUrl, videoId, posterUrl }: AdvancedPlayerProps) =
   return (
     <div
       ref={containerRef}
-      className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-border/50 group select-none"
+      className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl ring-1 ring-border/50 group select-none transition-all duration-700"
+      style={blurDataUrl ? {
+        backgroundImage: `url(${blurDataUrl})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+      } : undefined}
     >
       {/* Video Element */}
       <video

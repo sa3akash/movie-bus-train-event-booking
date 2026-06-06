@@ -64,17 +64,10 @@ export const videoModule = new Elysia({ prefix: "/video" })
     }
 
     return {
-      id: video.id,
+      ...video,
       status: jobStatus,
       progress,
       logs,
-      resolutions: video.resolutions,
-      originalUrl: video.originalUrl,
-      hlsUrl: video.hlsUrl,
-      dashUrl: video.dashUrl,
-      duration: video.duration,
-      error: video.error,
-      createdAt: video.createdAt,
     };
   },
   {

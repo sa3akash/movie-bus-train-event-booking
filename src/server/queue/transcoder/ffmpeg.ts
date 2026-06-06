@@ -2,6 +2,8 @@ import ffmpeg from "fluent-ffmpeg";
 import { Job } from "bullmq";
 import path from "path";
 import fs from "fs/promises";
+import sharp from "sharp";
+import { decode, encode } from "blurhash";
 
 export interface TargetResolution {
   name: string;
@@ -36,7 +38,10 @@ export function getTargetResolutions(height: number): TargetResolution[] {
   return targetRes;
 }
 
-export function extractAudio(originalPath: string, audioPath: string): Promise<void> {
+export function extractAudio(
+  originalPath: string,
+  audioPath: string,
+): Promise<void> {
   return new Promise((resolve, reject) => {
     ffmpeg(originalPath)
       .outputOptions(["-c:a aac", "-b:a 128k", "-vn"])
@@ -51,7 +56,7 @@ export function transcodeResolution(
   originalPath: string,
   outPath: string,
   res: TargetResolution,
-  onProgress: (percent: number) => void
+  onProgress: (percent: number) => void,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     ffmpeg(originalPath)
@@ -78,21 +83,26 @@ export function transcodeResolution(
   });
 }
 
-export function getThumbnailTimestamps(count: number): string[] {
-  const timestamps: string[] = [];
-  const interval = 100 / (count + 1);
+export function getThumbnailTimestamps(durationSeconds: number, count: number): number[] {
+  if (durationSeconds <= 0) return Array(count).fill(0);
+  const timestamps: number[] = [];
+  const interval = durationSeconds / (count + 1);
   for (let i = 1; i <= count; i++) {
-    timestamps.push(`${Math.floor(interval * i)}%`);
+    timestamps.push(interval * i);
   }
   return timestamps;
 }
 
-export function generateThumbnails(originalPath: string, outputDir: string, timestamps: string[]): Promise<string[]> {
-  return new Promise((resolve, reject) => {
+export async function generateThumbnails(
+  originalPath: string,
+  outputDir: string,
+  timestamps: number[],
+): Promise<string[]> {
+  const pngFiles: string[] = await new Promise((resolve, reject) => {
     let generatedFiles: string[] = [];
     ffmpeg(originalPath)
       .on("filenames", (filenames) => {
-        generatedFiles = filenames;
+        generatedFiles = filenames.map((f: string) => path.join(outputDir, f));
       })
       .on("end", () => resolve(generatedFiles))
       .on("error", (err) => reject(err))
@@ -102,6 +112,21 @@ export function generateThumbnails(originalPath: string, outputDir: string, time
         filename: "thumbnail-%i.png",
       });
   });
+
+  const optimizedFiles: string[] = [];
+  for (const pngFile of pngFiles) {
+    const webpFile = pngFile.replace(".png", ".webp");
+    const fileBuffer = await fs.readFile(pngFile);
+    await sharp(fileBuffer)
+      .resize(1280, 720, { fit: "inside", withoutEnlargement: true })
+      .webp({ quality: 80, effort: 6 })
+      .toFile(webpFile);
+    
+    await fs.unlink(pngFile);
+    optimizedFiles.push(webpFile);
+  }
+
+  return optimizedFiles;
 }
 
 export function generateStoryboardSprite(
@@ -111,12 +136,12 @@ export function generateStoryboardSprite(
   tileWidth: number = 160,
   tileHeight: number = 90,
   columns: number = 10,
-  rows: number = 10
+  rows: number = 10,
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     ffmpeg(originalPath)
       .outputOptions([
-        `-vf fps=1/${intervalSeconds},scale=${tileWidth}:${tileHeight},tile=${columns}x${rows}`
+        `-vf fps=1/${intervalSeconds},scale=${tileWidth}:${tileHeight},tile=${columns}x${rows}`,
       ])
       .output(outputPattern)
       .on("end", () => resolve())
@@ -131,7 +156,7 @@ function formatVttTime(seconds: number): string {
   const m = Math.floor((seconds % 3600) / 60);
   const s = Math.floor(seconds % 60);
   const ms = Math.floor((seconds % 1) * 1000);
-  
+
   const pad = (n: number, len: number = 2) => String(n).padStart(len, "0");
   return `${pad(h)}:${pad(m)}:${pad(s)}.${pad(ms, 3)}`;
 }
@@ -144,7 +169,7 @@ export async function generateStoryboardVtt(
   tileWidth: number,
   tileHeight: number,
   vttPath: string,
-  spriteUrlPrefix: string
+  spriteUrlPrefix: string,
 ): Promise<void> {
   const tilesPerImage = columns * rows;
   let vttContent = "WEBVTT\n\n";
@@ -153,21 +178,102 @@ export async function generateStoryboardVtt(
     const tileIndex = Math.floor(time / intervalSeconds);
     const imageIndex = Math.floor(tileIndex / tilesPerImage) + 1; // 1-indexed for %04d
     const indexInImage = tileIndex % tilesPerImage;
-    
+
     const col = indexInImage % columns;
     const row = Math.floor(indexInImage / columns);
-    
+
     const x = col * tileWidth;
     const y = row * tileHeight;
-    
+
     const startTime = formatVttTime(time);
-    const endTime = formatVttTime(Math.min(time + intervalSeconds, durationSeconds));
-    
+    const endTime = formatVttTime(
+      Math.min(time + intervalSeconds, durationSeconds),
+    );
+
     const imageName = `${spriteUrlPrefix}-${String(imageIndex).padStart(4, "0")}.jpg`;
-    
+
     vttContent += `${startTime} --> ${endTime}\n`;
     vttContent += `${imageName}#xywh=${x},${y},${tileWidth},${tileHeight}\n\n`;
   }
 
   await fs.writeFile(vttPath, vttContent, "utf-8");
 }
+
+export async function generateBlurData(
+  imagePath: string,
+): Promise<{ blurhash: string; blurDataUrl: string }> {
+  try {
+    const fileBuffer = await fs.readFile(imagePath);
+    const image = sharp(fileBuffer);
+    const { info, data } = await image
+      .resize(32, 32, { fit: "inside" })
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const blurhash = encode(
+      new Uint8ClampedArray(data),
+      info.width,
+      info.height,
+      4,
+      4,
+    );
+
+    // Decode blurhash back into pixels to generate a perfect, smooth placeholder
+    const decodedPixels = decode(blurhash, 32, 32);
+    const blurhashDataBuffer = await sharp(Buffer.from(decodedPixels), {
+      raw: {
+        width: 32,
+        height: 32,
+        channels: 4,
+      },
+    })
+      .webp({ quality: 60 })
+      .toBuffer();
+
+    const blurDataUrl = `data:image/webp;base64,${blurhashDataBuffer.toString("base64")}`;
+
+    return { blurhash, blurDataUrl };
+  } catch (error) {
+    console.error("Failed to generate blur data:", error);
+    return { blurhash: "", blurDataUrl: "" };
+  }
+}
+
+/*
+const encodeImageToBlurhash = async (
+  buffer: Buffer,
+): Promise<{ blurhash: string; blurhashData: string }> => {
+  const image = sharp(buffer);
+  const { data, info } = await image
+    .ensureAlpha()
+    .raw()
+    .resize(32, 32, { fit: "inside" })
+    .toBuffer({ resolveWithObject: true });
+
+  const blurhash = encode(
+    new Uint8ClampedArray(data),
+    info.width,
+    info.height,
+    4,
+    4,
+  );
+
+  // Decode blurhash back into pixels to generate a perfect, smooth placeholder
+  const decodedPixels = decode(blurhash, 32, 32);
+  const blurhashDataBuffer = await sharp(Buffer.from(decodedPixels), {
+    raw: {
+      width: 32,
+      height: 32,
+      channels: 4,
+    },
+  })
+    .webp({ quality: 60 })
+    .toBuffer();
+
+  const blurhashData = `data:image/webp;base64,${blurhashDataBuffer.toString("base64")}`;
+
+  return { blurhash, blurhashData };
+};
+
+*/

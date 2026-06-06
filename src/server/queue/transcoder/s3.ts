@@ -47,6 +47,7 @@ export async function uploadDirectoryToS3(dirPath: string, s3Prefix: string) {
     else if (entry.name.endsWith(".vtt")) contentType = "text/vtt";
     else if (entry.name.endsWith(".jpg") || entry.name.endsWith(".jpeg")) contentType = "image/jpeg";
     else if (entry.name.endsWith(".png")) contentType = "image/png";
+    else if (entry.name.endsWith(".webp")) contentType = "image/webp";
 
     return s3Client.send(
       new PutObjectCommand({
