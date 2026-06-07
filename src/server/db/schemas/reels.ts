@@ -10,6 +10,7 @@ import { relations } from "drizzle-orm";
 import { defaultColumns } from "./defaultKey";
 import { usersTable } from "./users";
 import { videos } from "./video";
+import { images } from "./image";
 
 export const reelSeries = pgTable("reel_series", {
   ...defaultColumns,
@@ -221,6 +222,10 @@ export const reelSeriesRelations = relations(reelSeries, ({ one, many }) => ({
   user: one(usersTable, {
     fields: [reelSeries.userId],
     references: [usersTable.id],
+  }),
+  coverImage: one(images, {
+    fields: [reelSeries.coverImageId],
+    references: [images.id],
   }),
   episodes: many(reels),
 }));

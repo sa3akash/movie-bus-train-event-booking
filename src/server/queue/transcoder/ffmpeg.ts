@@ -60,7 +60,7 @@ export function transcodeResolution(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     ffmpeg(originalPath)
-      .size(`?x${res.h}`)
+      .videoFilters([`scale=-2:${res.h}`])
       .videoCodec("libx264")
       .outputOptions([
         `-b:v ${res.bitrate}`,
@@ -143,8 +143,13 @@ export function generateStoryboardSprite(
     const codecOptions = isWebp ? ["-c:v libwebp", "-q:v 60"] : ["-q:v 3"];
 
     ffmpeg(originalPath)
+      .videoFilters([
+        `fps=1/${intervalSeconds}`,
+        `scale=${tileWidth}:${tileHeight}`,
+        `tile=${columns}x${rows}`
+      ])
       .outputOptions([
-        `-vf fps=1/${intervalSeconds},scale=${tileWidth}:${tileHeight},tile=${columns}x${rows}`,
+        "-an",
         ...codecOptions,
       ])
       .output(outputPattern)

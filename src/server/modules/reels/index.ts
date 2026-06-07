@@ -122,18 +122,35 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
     "/series",
     async ({ query }) => {
       const limit = Number(query.limit) || 20;
+      const cursor = query.cursor;
+      const search = query.search;
+
+      let whereClause: any = undefined;
+
+      if (search) {
+        whereClause = ilike(reelSeries.title, `%${search}%`);
+      }
+
+      if (cursor) {
+        const cursorCondition = lt(reelSeries.createdAt, new Date(cursor));
+        whereClause = whereClause ? and(whereClause, cursorCondition) : cursorCondition;
+      }
+
       const list = await db.query.reelSeries.findMany({
+        where: whereClause,
         limit,
         orderBy: [desc(reelSeries.createdAt)],
         with: {
            user: { columns: { id: true, name: true, avatarId: true } },
         }
       });
-      return { success: true, series: list };
+
+      const nextCursor = list.length === limit ? list[list.length - 1].createdAt.toISOString() : null;
+      return { success: true, series: list, nextCursor };
     },
     {
-       query: t.Optional(t.Object({ limit: t.Optional(t.String()) })),
-       detail: { summary: "Get all Series", tags: ["Reels", "Series"] },
+       query: t.Optional(t.Object({ limit: t.Optional(t.String()), cursor: t.Optional(t.String()), search: t.Optional(t.String()) })),
+       detail: { summary: "Get all Series (Paginated/Search)", tags: ["Reels", "Series"] },
     }
   )
   .get(
@@ -143,6 +160,7 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
         where: eq(reelSeries.id, params.id),
         with: {
            user: { columns: { id: true, name: true, avatarId: true } },
+           coverImage: true,
         }
       });
       if (!series) {
@@ -365,6 +383,121 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
       detail: { summary: "Create Reel Series", tags: ["Reels", "Series"] },
     }
   )
+  .put(
+    "/series/:id",
+    async ({ params, body, user, set }) => {
+      const series = await db.query.reelSeries.findFirst({ where: eq(reelSeries.id, params.id) });
+      if (!series) {
+        set.status = 404;
+        return { error: "Series not found" };
+      }
+      if (series.userId !== user.id) {
+        set.status = 403;
+        return { error: "Forbidden" };
+      }
+
+      const [updatedSeries] = await db
+        .update(reelSeries)
+        .set({
+          title: body.title,
+          description: body.description,
+          coverImageId: body.coverImageId,
+          trailerVideoId: body.trailerVideoId,
+          genre: body.genre,
+          status: body.status,
+          totalEpisodes: body.totalEpisodes,
+          isPremium: body.isPremium,
+          defaultPricePerEpisode: body.defaultPricePerEpisode,
+          tags: body.tags,
+          cast: body.cast,
+          director: body.director,
+          releaseYear: body.releaseYear,
+          language: body.language,
+          ageRating: body.ageRating,
+          updatedAt: new Date(),
+        })
+        .where(eq(reelSeries.id, params.id))
+        .returning();
+
+      return { success: true, series: updatedSeries };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        title: t.Optional(t.String()),
+        description: t.Optional(t.String()),
+        coverImageId: t.Optional(t.String()),
+        trailerVideoId: t.Optional(t.String()),
+        genre: t.Optional(t.String()),
+        status: t.Optional(t.String()),
+        totalEpisodes: t.Optional(t.Number()),
+        isPremium: t.Optional(t.Boolean()),
+        defaultPricePerEpisode: t.Optional(t.Number()),
+        tags: t.Optional(t.Array(t.String())),
+        cast: t.Optional(t.Array(t.String())),
+        director: t.Optional(t.String()),
+        releaseYear: t.Optional(t.Number()),
+        language: t.Optional(t.String()),
+        ageRating: t.Optional(t.String()),
+      }),
+      detail: { summary: "Update Reel Series", tags: ["Reels", "Series"] },
+    }
+  )
+  .delete(
+    "/series/:id",
+    async ({ params, user, set }) => {
+      const series = await db.query.reelSeries.findFirst({ where: eq(reelSeries.id, params.id) });
+      if (!series) {
+        set.status = 404;
+        return { error: "Series not found" };
+      }
+      if (series.userId !== user.id) {
+        set.status = 403;
+        return { error: "Forbidden" };
+      }
+
+      await db.delete(reelSeries).where(eq(reelSeries.id, params.id));
+      return { success: true };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      detail: { summary: "Delete Reel Series", tags: ["Reels", "Series"] },
+    }
+  )
+  .put(
+    "/series/:id/episodes/reorder",
+    async ({ params, body, user, set }) => {
+      const series = await db.query.reelSeries.findFirst({ where: eq(reelSeries.id, params.id) });
+      if (!series) {
+        set.status = 404;
+        return { error: "Series not found" };
+      }
+      if (series.userId !== user.id) {
+        set.status = 403;
+        return { error: "Forbidden" };
+      }
+
+      // body.updates is an array of { id: string, episodeNumber: number }
+      // We will loop and update each episode
+      for (const update of body.updates) {
+        await db.update(reels)
+          .set({ episodeNumber: update.episodeNumber })
+          .where(and(eq(reels.id, update.id), eq(reels.seriesId, params.id)));
+      }
+
+      return { success: true };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        updates: t.Array(t.Object({
+          id: t.String(),
+          episodeNumber: t.Number()
+        }))
+      }),
+      detail: { summary: "Reorder Series Episodes", tags: ["Reels", "Series"] },
+    }
+  )
   .post(
     "/bulk",
     async ({ body, user }) => {
@@ -467,6 +600,44 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
     {
       params: t.Object({ id: t.String() }),
       detail: { summary: "Delete Reel", tags: ["Reels"] },
+    }
+  )
+  .put(
+    "/:id",
+    async ({ params, body, user, set }) => {
+      const reel = await db.query.reels.findFirst({ where: eq(reels.id, params.id) });
+      if (!reel) {
+        set.status = 404;
+        return { error: "Reel not found" };
+      }
+      if (reel.userId !== user.id) {
+        set.status = 403;
+        return { error: "Forbidden" };
+      }
+
+      const [updatedReel] = await db.update(reels)
+        .set({
+          caption: body.caption,
+          isPremium: body.isPremium,
+          unlockPrice: body.unlockPrice,
+          visibility: body.visibility,
+          allowComments: body.allowComments,
+        })
+        .where(eq(reels.id, params.id))
+        .returning();
+
+      return { success: true, reel: updatedReel };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      body: t.Object({
+        caption: t.Optional(t.String()),
+        isPremium: t.Optional(t.Boolean()),
+        unlockPrice: t.Optional(t.Number()),
+        visibility: t.Optional(t.String()),
+        allowComments: t.Optional(t.Boolean()),
+      }),
+      detail: { summary: "Update Reel Metadata", tags: ["Reels"] },
     }
   )
   .post(

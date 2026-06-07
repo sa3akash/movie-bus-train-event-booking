@@ -108,6 +108,7 @@ export const VideoProgressBar: React.FC<VideoProgressBarProps> = ({
   const handleDragStart = (
     e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>,
   ) => {
+    e.stopPropagation(); // Prevent video from pausing/playing
     const video = videoRef?.current;
 
     setIsDragging(true);
@@ -164,7 +165,7 @@ export const VideoProgressBar: React.FC<VideoProgressBarProps> = ({
 
   return (
     <div
-      className="absolute bottom-0 left-0 w-full h-6 z-50 cursor-pointer group/progress flex items-end touch-none"
+      className="absolute bottom-0 left-0 w-full h-6 z-50 cursor-pointer group/progress flex items-end touch-none pointer-events-auto"
       ref={progressBarRef}
       onMouseDown={handleDragStart}
       onTouchStart={handleDragStart}

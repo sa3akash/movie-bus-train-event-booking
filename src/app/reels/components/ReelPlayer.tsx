@@ -245,8 +245,9 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
       </div>
 
       {/* Bottom Info Section */}
-      <div className="absolute bottom-0 left-0 w-full p-4 pb-6 bg-linear-to-t from-black/80 via-black/50 to-transparent z-10 pointer-events-none">
-        <div className="flex items-center gap-3 mb-2 pointer-events-auto">
+      <div className="absolute bottom-0 left-0 w-full p-4 pb-8 bg-linear-to-t from-black/80 via-black/50 to-transparent z-10 pointer-events-none">
+        <div className="w-[80%] flex flex-col items-start pointer-events-auto">
+          <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-full bg-gray-500 border border-white/50 shrink-0 overflow-hidden cursor-pointer">
             {reel.user?.avatarId ? (
               <img src={`/api/images/${reel.user.avatarId}`} alt="avatar" className="w-full h-full object-cover" />
@@ -273,20 +274,20 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
         </div>
         
         {reel.series && (
-          <button onClick={() => setSeriesDrawerOpen(true)} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md px-3 py-1.5 rounded-lg mb-2 transition-colors pointer-events-auto">
+          <button onClick={() => setSeriesDrawerOpen(true)} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md px-3 py-1.5 rounded-lg mb-2 transition-colors">
             <span className="text-xs font-bold text-white tracking-wide">🎬 {reel.series.title}</span>
             <span className="text-[10px] font-bold bg-white text-black px-1.5 py-0.5 rounded">EP {reel.episodeNumber}</span>
           </button>
         )}
         
         {reel.series && (
-          <h4 className="text-white font-bold text-base drop-shadow-md mb-1 pointer-events-auto">
+          <h4 className="text-white font-bold text-base drop-shadow-md mb-1">
             Episode {reel.episodeNumber} {reel.caption ? `· ${reel.caption}` : ''}
           </h4>
         )}
         
         {!reel.series && reel.caption && (
-          <p className="text-white text-sm w-[85%] mb-2 drop-shadow-md font-medium leading-tight pointer-events-auto">
+          <p className="text-white text-sm mb-2 drop-shadow-md font-medium leading-tight">
             {reel.caption.split(' ').map((word: string, i: number) => 
               word.startsWith('#') ? (
                 <Link href={`/reels/hashtag/${word.replace('#', '')}`} key={i} className="font-bold text-indigo-300 hover:text-indigo-200 hover:underline">
@@ -299,13 +300,14 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
           </p>
         )}
 
-        <div className="flex items-center gap-2 text-white/90 text-sm mt-1 pointer-events-auto cursor-pointer group/audio">
+        <div className="flex items-center gap-2 text-white/90 text-sm mt-1 cursor-pointer group/audio">
           <Music className="w-4 h-4 animate-pulse group-hover/audio:text-indigo-300 transition" />
           <div className="w-48 overflow-hidden relative h-5">
             <p className="absolute whitespace-nowrap animate-[marquee_5s_linear_infinite] group-hover/audio:underline">
               Original Audio - {reel.user?.name || "Unknown"}
             </p>
           </div>
+        </div>
         </div>
       </div>
 

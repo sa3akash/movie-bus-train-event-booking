@@ -99,8 +99,13 @@ export const analyzeWorker = new Worker(
       // Step 3: Extract Audio
       job.log("Extracting audio stream...");
       await job.updateProgress(50);
-      const audioPath = path.join(workDir, `audio.mp4`);
-      await extractAudio(originalPath, audioPath);
+      const audioStream = metadata.streams.find((s) => s.codec_type === "audio");
+      if (audioStream) {
+        const audioPath = path.join(workDir, `audio.mp4`);
+        await extractAudio(originalPath, audioPath);
+      } else {
+        job.log("No audio stream found. Skipping audio extraction.");
+      }
       await job.updateProgress(100);
 
       // Step 4: Dispatch Flow for Transcode + Package

@@ -1,5 +1,5 @@
 import React from "react";
-import ReelFeed from "../components/ReelFeed";
+import ReelFeed from "../../components/ReelFeed";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 

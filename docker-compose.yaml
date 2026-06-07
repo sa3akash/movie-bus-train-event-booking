@@ -1,6 +1,5 @@
 name: minio
 
-
 services:
   minio:
     image: minio/minio:latest
@@ -15,11 +14,38 @@ services:
     volumes:
       - minio_data:/data
     networks:
-      - ticket-network
+      - project-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=project-db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - project-network
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    command: redis-server --requirepass 123456
+    networks:
+      - project-network
+    volumes:
+      - redis_data:/data
 
 volumes:
+  postgres_data:
+  redis_data:
   minio_data:
 
 networks:
-  ticket-network:
+  project-network:
     driver: bridge
