@@ -1,8 +1,8 @@
 import { Elysia, t } from "elysia";
 import { db } from "../../db";
-import { reels, reelLikes, reelShares, reelComments, reelCommentLikes, savedReels } from "../../db/schemas/reels";
+import { reels, reelLikes, reelShares, reelComments, reelCommentLikes, savedReels, reelSeries } from "../../db/schemas/reels";
 import { userFollowers } from "../../db/schemas/users";
-import { eq, desc, and, ilike, inArray, lt } from "drizzle-orm";
+import { eq, desc, asc, and, ilike, inArray, lt, isNull } from "drizzle-orm";
 import { isAuthenticated } from "../../middlewares/auth";
 import { redisConnection } from "../../queue";
 
@@ -31,7 +31,10 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
       
       // 2. Replenish Queue if empty
       if (reelIds.length === 0) {
-        let whereClause: any = eq(reels.visibility, "PUBLIC");
+        let whereClause: any = and(
+          eq(reels.visibility, "PUBLIC"),
+          isNull(reels.seriesId)
+        );
         
         // If we have a cursor from the last batch, use it to fetch older reels
         if (cursorId && cursorId !== "has_more") {
@@ -72,6 +75,7 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
         with: {
           user: { columns: { id: true, name: true, avatarId: true } },
           video: true,
+          series: true,
         },
       });
 
@@ -82,7 +86,7 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
       if (initialReelId && !cursorId) {
          const specificReel = await db.query.reels.findFirst({
            where: eq(reels.id, initialReelId),
-           with: { user: { columns: { id: true, name: true, avatarId: true } }, video: true }
+           with: { user: { columns: { id: true, name: true, avatarId: true } }, video: true, series: true }
          });
          
          if (specificReel) {
@@ -112,6 +116,63 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
         })
       ),
       detail: { summary: "Get Reels Feed (Redis Queue)", tags: ["Reels"] },
+    }
+  )
+  .get(
+    "/series",
+    async ({ query }) => {
+      const limit = Number(query.limit) || 20;
+      const list = await db.query.reelSeries.findMany({
+        limit,
+        orderBy: [desc(reelSeries.createdAt)],
+        with: {
+           user: { columns: { id: true, name: true, avatarId: true } },
+        }
+      });
+      return { success: true, series: list };
+    },
+    {
+       query: t.Optional(t.Object({ limit: t.Optional(t.String()) })),
+       detail: { summary: "Get all Series", tags: ["Reels", "Series"] },
+    }
+  )
+  .get(
+    "/series/:id",
+    async ({ params, set }) => {
+      const series = await db.query.reelSeries.findFirst({
+        where: eq(reelSeries.id, params.id),
+        with: {
+           user: { columns: { id: true, name: true, avatarId: true } },
+        }
+      });
+      if (!series) {
+        set.status = 404;
+        return { error: "Series not found" };
+      }
+      return { success: true, series };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      detail: { summary: "Get Series Details", tags: ["Reels", "Series"] },
+    }
+  )
+  .get(
+    "/series/:id/episodes",
+    async ({ params, set }) => {
+      const list = await db.query.reels.findMany({
+        where: eq(reels.seriesId, params.id),
+        orderBy: [asc(reels.episodeNumber)],
+        with: {
+           video: true,
+           user: { columns: { id: true, name: true, avatarId: true } },
+           series: true,
+        }
+      });
+      return { success: true, episodes: list };
+    },
+    {
+      params: t.Object({ id: t.String() }),
+      detail: { summary: "Get Series Episodes", tags: ["Reels", "Series"] },
     }
   )
   .get(
@@ -161,6 +222,7 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
         with: {
           user: { columns: { id: true, name: true, avatarId: true } },
           video: true,
+          series: true,
         },
       });
 
@@ -228,6 +290,12 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
           allowComments: body.allowComments ?? true,
           allowRemixing: body.allowRemixing ?? true,
           hashtags,
+          seriesId: body.seriesId,
+          seasonNumber: body.seasonNumber,
+          episodeNumber: body.episodeNumber,
+          episodeTitle: body.episodeTitle,
+          isPremium: body.isPremium,
+          unlockPrice: body.unlockPrice,
         })
         .returning();
 
@@ -240,8 +308,110 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
         visibility: t.Optional(t.String()),
         allowComments: t.Optional(t.Boolean()),
         allowRemixing: t.Optional(t.Boolean()),
+        seriesId: t.Optional(t.String()),
+        seasonNumber: t.Optional(t.Number()),
+        episodeNumber: t.Optional(t.Number()),
+        episodeTitle: t.Optional(t.String()),
+        isPremium: t.Optional(t.Boolean()),
+        unlockPrice: t.Optional(t.Number()),
       }),
       detail: { summary: "Create Reel", tags: ["Reels"] },
+    }
+  )
+  .post(
+    "/series",
+    async ({ body, user }) => {
+      const [newSeries] = await db
+        .insert(reelSeries)
+        .values({
+          title: body.title,
+          description: body.description,
+          coverImageId: body.coverImageId,
+          trailerVideoId: body.trailerVideoId,
+          genre: body.genre,
+          status: body.status,
+          totalEpisodes: body.totalEpisodes,
+          isPremium: body.isPremium,
+          defaultPricePerEpisode: body.defaultPricePerEpisode,
+          tags: body.tags,
+          cast: body.cast,
+          director: body.director,
+          releaseYear: body.releaseYear,
+          language: body.language,
+          ageRating: body.ageRating,
+          userId: user.id,
+        })
+        .returning();
+      return { success: true, series: newSeries };
+    },
+    {
+      body: t.Object({
+        title: t.String(),
+        description: t.Optional(t.String()),
+        coverImageId: t.Optional(t.String()),
+        trailerVideoId: t.Optional(t.String()),
+        genre: t.Optional(t.String()),
+        status: t.Optional(t.String()),
+        totalEpisodes: t.Optional(t.Number()),
+        isPremium: t.Optional(t.Boolean()),
+        defaultPricePerEpisode: t.Optional(t.Number()),
+        tags: t.Optional(t.Array(t.String())),
+        cast: t.Optional(t.Array(t.String())),
+        director: t.Optional(t.String()),
+        releaseYear: t.Optional(t.Number()),
+        language: t.Optional(t.String()),
+        ageRating: t.Optional(t.String()),
+      }),
+      detail: { summary: "Create Reel Series", tags: ["Reels", "Series"] },
+    }
+  )
+  .post(
+    "/bulk",
+    async ({ body, user }) => {
+      const seriesId = body.seriesId;
+      let nextEpisodeNumber = 1;
+      const lastEpisode = await db.query.reels.findFirst({
+        where: eq(reels.seriesId, seriesId),
+        orderBy: [desc(reels.episodeNumber)]
+      });
+      if (lastEpisode && lastEpisode.episodeNumber) {
+         nextEpisodeNumber = lastEpisode.episodeNumber + 1;
+      }
+      
+      const insertData = body.episodes.map((ep, index) => {
+         const hashtags = extractHashtags(ep.caption || "");
+         return {
+           userId: user.id,
+           videoId: ep.videoId,
+           caption: ep.caption,
+           visibility: ep.visibility || "PUBLIC",
+           seriesId: seriesId,
+           seasonNumber: ep.seasonNumber || 1,
+           episodeNumber: nextEpisodeNumber + index,
+           episodeTitle: ep.episodeTitle,
+           isPremium: ep.isPremium || false,
+           unlockPrice: ep.unlockPrice,
+           hashtags
+         };
+      });
+      
+      const newReels = await db.insert(reels).values(insertData).returning();
+      return { success: true, count: newReels.length, reels: newReels };
+    },
+    {
+      body: t.Object({
+        seriesId: t.String(),
+        episodes: t.Array(t.Object({
+           videoId: t.String(),
+           caption: t.Optional(t.String()),
+           visibility: t.Optional(t.String()),
+           seasonNumber: t.Optional(t.Number()),
+           episodeTitle: t.Optional(t.String()),
+           isPremium: t.Optional(t.Boolean()),
+           unlockPrice: t.Optional(t.Number())
+        }))
+      }),
+      detail: { summary: "Bulk Create Series Episodes", tags: ["Reels", "Series"] },
     }
   )
   .get(

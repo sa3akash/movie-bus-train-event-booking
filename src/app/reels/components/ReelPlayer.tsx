@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { Heart, MessageCircle, Share2, Music, Tag, Bookmark, MoreVertical, Trash } from "lucide-react";
+import { Heart, MessageCircle, Share2, Music, Tag, Bookmark, MoreVertical, Trash, Lock, ListVideo } from "lucide-react";
 import { CommentsDrawer } from "./CommentsDrawer";
+import { SeriesDrawer } from "./SeriesDrawer";
 import { VideoProgressBar } from "./VideoProgressBar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -28,23 +29,45 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
   const [savesCount, setSavesCount] = useState(reel.savesCount || 0);
   
   const [commentsOpen, setCommentsOpen] = useState(false);
+  const [seriesDrawerOpen, setSeriesDrawerOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isDeleted, setIsDeleted] = useState(false);
+  
+  // Cinematic UI Auto-Hide
+  const [showUI, setShowUI] = useState(true);
 
   useEffect(() => {
-    if (isActive && videoRef.current) {
+    let timeout: NodeJS.Timeout;
+    if (isPlaying && showUI && !commentsOpen && !seriesDrawerOpen && !menuOpen) {
+      timeout = setTimeout(() => {
+        setShowUI(false);
+      }, 3500);
+    }
+    return () => clearTimeout(timeout);
+  }, [isPlaying, showUI, commentsOpen, seriesDrawerOpen, menuOpen]);
+
+  const handleUserInteraction = () => {
+    setShowUI(true);
+  };
+
+  useEffect(() => {
+    if (isActive && videoRef.current && !reel.isPremium) {
       videoRef.current.play().then(() => setIsPlaying(true)).catch(e => console.log("Auto-play prevented", e));
     } else if (videoRef.current) {
       videoRef.current.pause();
       setIsPlaying(false);
     }
-  }, [isActive]);
+  }, [isActive, reel.isPremium]);
 
   if (isDeleted) {
     return <div className="w-full h-full snap-start bg-gray-900 flex items-center justify-center text-white">Reel deleted.</div>;
   }
 
   const handleVideoClick = () => {
+    if (!showUI) {
+      setShowUI(true);
+      return; // Don't pause if they just wanted to see the UI
+    }
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
@@ -123,18 +146,36 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
   const videoUrl = reel.video?.originalUrl;
 
   return (
-    <div className="relative w-full h-full flex justify-center items-center bg-black overflow-hidden group/player">
-      {/* Video Element */}
-      <video
-        ref={videoRef}
-        src={videoUrl}
-        className="absolute inset-0 w-full h-full object-cover cursor-pointer"
-        loop
-        playsInline
-        onClick={handleVideoClick}
-      />
+    <div 
+      className="relative w-full h-full flex justify-center items-center bg-black overflow-hidden group/player"
+      onMouseMove={handleUserInteraction}
+      onTouchStart={handleUserInteraction}
+    >
+      {/* Video Element or Paywall */}
+      {reel.isPremium ? (
+        <div className="absolute inset-0 w-full h-full bg-gray-900 flex flex-col items-center justify-center text-center p-6 z-20 backdrop-blur-xl">
+           <Lock className="w-16 h-16 text-yellow-400 mb-4" />
+           <h3 className="text-2xl font-bold text-white mb-2">Premium Episode</h3>
+           <p className="text-white/70 mb-6">Unlock this episode to continue watching.</p>
+           <button className="px-8 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-full shadow-lg transition-transform hover:scale-105 flex items-center gap-2">
+             <Lock className="w-4 h-4" /> Unlock for {reel.unlockPrice || reel.series?.defaultPricePerEpisode || 10} Coins
+           </button>
+        </div>
+      ) : (
+        <video
+          ref={videoRef}
+          src={videoUrl}
+          className="absolute inset-0 w-full h-full object-cover cursor-pointer"
+          loop
+          playsInline
+          onClick={handleVideoClick}
+        />
+      )}
 
-      {/* Play/Pause Overlay Indicator */}
+      <div 
+        className={`absolute inset-0 z-10 transition-opacity duration-500 ease-in-out pointer-events-none ${showUI ? 'opacity-100' : 'opacity-0'}`}
+      >
+        {/* Play/Pause Overlay Indicator */}
       {!isPlaying && isActive && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -145,7 +186,7 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
 
       {/* Top Menu (Three Dots) */}
       <div className="absolute top-4 right-4 z-20">
-        <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 bg-black/20 hover:bg-black/40 rounded-full backdrop-blur-sm transition">
+        <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 bg-black/20 hover:bg-black/40 rounded-full backdrop-blur-sm transition pointer-events-auto">
           <MoreVertical className="w-6 h-6 text-white" />
         </button>
         {menuOpen && (
@@ -162,7 +203,7 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
 
       {/* Right Sidebar Actions */}
       <div className="absolute right-4 bottom-24 flex flex-col items-center gap-6 z-10">
-        <button className="flex flex-col items-center gap-1 group" onClick={handleLike}>
+        <button className="flex flex-col items-center gap-1 group pointer-events-auto" onClick={handleLike}>
           <div className="p-3 rounded-full bg-black/20 backdrop-blur-md group-hover:bg-black/40 transition">
             <Heart className={`w-7 h-7 ${liked ? "fill-red-500 text-red-500" : "text-white"}`} />
           </div>
@@ -170,7 +211,7 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
         </button>
 
         <button 
-          className="flex flex-col items-center gap-1 group" 
+          className="flex flex-col items-center gap-1 group pointer-events-auto" 
           onClick={() => reel.allowComments && setCommentsOpen(true)}
         >
           <div className="p-3 rounded-full bg-black/20 backdrop-blur-md group-hover:bg-black/40 transition">
@@ -179,19 +220,28 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
           <span className="text-white text-xs font-semibold drop-shadow-md">{reel.allowComments ? commentsCount : 'Off'}</span>
         </button>
 
-        <button className="flex flex-col items-center gap-1 group" onClick={handleSave}>
+        <button className="flex flex-col items-center gap-1 group pointer-events-auto" onClick={handleSave}>
           <div className="p-3 rounded-full bg-black/20 backdrop-blur-md group-hover:bg-black/40 transition">
             <Bookmark className={`w-7 h-7 ${saved ? "fill-yellow-400 text-yellow-400" : "text-white"}`} />
           </div>
           <span className="text-white text-xs font-semibold drop-shadow-md">{savesCount}</span>
         </button>
 
-        <button className="flex flex-col items-center gap-1 group" onClick={handleShare}>
+        <button className="flex flex-col items-center gap-1 group pointer-events-auto" onClick={handleShare}>
           <div className="p-3 rounded-full bg-black/20 backdrop-blur-md group-hover:bg-black/40 transition">
             <Share2 className="w-7 h-7 text-white" />
           </div>
           <span className="text-white text-xs font-semibold drop-shadow-md">{sharesCount}</span>
         </button>
+
+        {reel.seriesId && (
+          <button className="flex flex-col items-center gap-1 group pointer-events-auto" onClick={() => setSeriesDrawerOpen(true)}>
+            <div className="p-3 rounded-full bg-black/20 backdrop-blur-md group-hover:bg-black/40 transition">
+              <ListVideo className="w-7 h-7 text-white" />
+            </div>
+            <span className="text-white text-[10px] font-semibold drop-shadow-md">Episodes</span>
+          </button>
+        )}
       </div>
 
       {/* Bottom Info Section */}
@@ -222,7 +272,20 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
           </div>
         </div>
         
-        {reel.caption && (
+        {reel.series && (
+          <button onClick={() => setSeriesDrawerOpen(true)} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 backdrop-blur-md px-3 py-1.5 rounded-lg mb-2 transition-colors pointer-events-auto">
+            <span className="text-xs font-bold text-white tracking-wide">🎬 {reel.series.title}</span>
+            <span className="text-[10px] font-bold bg-white text-black px-1.5 py-0.5 rounded">EP {reel.episodeNumber}</span>
+          </button>
+        )}
+        
+        {reel.series && (
+          <h4 className="text-white font-bold text-base drop-shadow-md mb-1 pointer-events-auto">
+            Episode {reel.episodeNumber} {reel.caption ? `· ${reel.caption}` : ''}
+          </h4>
+        )}
+        
+        {!reel.series && reel.caption && (
           <p className="text-white text-sm w-[85%] mb-2 drop-shadow-md font-medium leading-tight pointer-events-auto">
             {reel.caption.split(' ').map((word: string, i: number) => 
               word.startsWith('#') ? (
@@ -246,16 +309,21 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
         </div>
       </div>
 
-      <CommentsDrawer reelId={reel.id} isOpen={commentsOpen} onOpenChange={setCommentsOpen} />
+        <VideoProgressBar 
+          videoRef={videoRef} 
+          onSeek={(time) => {
+            if (videoRef.current) {
+              videoRef.current.currentTime = time;
+            }
+          }}
+        />
+      </div>
 
-      <VideoProgressBar 
-        videoRef={videoRef} 
-        onSeek={(time) => {
-          if (videoRef.current) {
-            videoRef.current.currentTime = time;
-          }
-        }}
-      />
+      <CommentsDrawer reelId={reel.id} isOpen={commentsOpen} onOpenChange={setCommentsOpen} />
+      
+      {reel.seriesId && (
+        <SeriesDrawer seriesId={reel.seriesId} isOpen={seriesDrawerOpen} onOpenChange={setSeriesDrawerOpen} currentReelId={reel.id} />
+      )}
     </div>
   );
 };

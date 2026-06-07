@@ -113,7 +113,7 @@ export const CommentsDrawer: React.FC<CommentsDrawerProps> = ({
   const CommentItem = ({ comment, isReply = false }: { comment: any, isReply?: boolean }) => {
     return (
       <div className={`flex gap-3 ${isReply ? 'mt-3' : 'mb-4'}`}>
-        <div className={`rounded-full bg-gray-200 overflow-hidden flex-shrink-0 ${isReply ? 'w-6 h-6' : 'w-8 h-8'}`}>
+        <div className={`rounded-full bg-gray-200 overflow-hidden shrink-0 ${isReply ? 'w-6 h-6' : 'w-8 h-8'}`}>
           {comment.user?.avatarId && (
             <img
               src={`/api/images/${comment.user.avatarId}`}
@@ -164,7 +164,7 @@ export const CommentsDrawer: React.FC<CommentsDrawerProps> = ({
         <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
         <Drawer.Content className="bg-white flex flex-col rounded-t-[20px] h-[75vh] mt-24 fixed bottom-0 left-0 right-0 sm:max-w-[400px] sm:mx-auto z-50">
           <div className="p-4 bg-white rounded-t-[20px] flex-1 flex flex-col">
-            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-gray-300 mb-4" />
+            <div className="mx-auto w-12 h-1.5 shrink-0 rounded-full bg-gray-300 mb-4" />
 
             <div className="flex items-center justify-between mb-4 pb-2 border-b">
               <h2 className="text-lg font-bold">Comments</h2>

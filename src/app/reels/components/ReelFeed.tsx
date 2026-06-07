@@ -7,9 +7,10 @@ import { Loader2, ChevronUp, ChevronDown } from "lucide-react";
 interface ReelFeedProps {
   apiEndpoint?: string;
   initialReelId?: string;
+  seriesId?: string;
 }
 
-const ReelFeed: React.FC<ReelFeedProps> = ({ apiEndpoint = "/api/reels?limit=10", initialReelId }) => {
+const ReelFeed: React.FC<ReelFeedProps> = ({ apiEndpoint = "/api/reels?limit=10", initialReelId, seriesId }) => {
   const [reels, setReels] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
@@ -22,20 +23,43 @@ const ReelFeed: React.FC<ReelFeedProps> = ({ apiEndpoint = "/api/reels?limit=10"
     if (isFetching || !hasMore) return;
     setIsFetching(true);
     try {
-      const separator = apiEndpoint.includes("?") ? "&" : "?";
-      const cursorParam = currentCursor ? `&cursor=${encodeURIComponent(currentCursor)}` : "";
-      const initialReelParam = (initialReelId && !currentCursor) ? `&initialReelId=${encodeURIComponent(initialReelId)}` : "";
-      const res = await fetch(`${apiEndpoint}${separator}limit=10${cursorParam}${initialReelParam}`);
-      const data = await res.json();
-      if (data.success && data.reels) {
-        if (data.reels.length === 0) {
+      if (seriesId) {
+        // SERIES MODE
+        const res = await fetch(`/api/reels/series/${seriesId}/episodes`);
+        const data = await res.json();
+        if (data.success && data.episodes) {
+          setReels(data.episodes);
           setHasMore(false);
-        } else {
-          setReels(prev => !currentCursor ? data.reels : [...prev, ...data.reels]);
-          if (data.nextCursor) {
-            setCursor(data.nextCursor);
-          } else {
+          
+          // Initial scroll to the selected episode
+          if (initialReelId) {
+            const idx = data.episodes.findIndex((r: any) => r.id === initialReelId);
+            if (idx > 0) {
+              setTimeout(() => {
+                 if (containerRef.current) {
+                   containerRef.current.scrollTo({ top: containerRef.current.clientHeight * idx, behavior: 'instant' });
+                 }
+              }, 100);
+            }
+          }
+        }
+      } else {
+        // STANDARD FEED MODE
+        const separator = apiEndpoint.includes("?") ? "&" : "?";
+        const cursorParam = currentCursor ? `&cursor=${encodeURIComponent(currentCursor)}` : "";
+        const initialReelParam = (initialReelId && !currentCursor) ? `&initialReelId=${encodeURIComponent(initialReelId)}` : "";
+        const res = await fetch(`${apiEndpoint}${separator}limit=10${cursorParam}${initialReelParam}`);
+        const data = await res.json();
+        if (data.success && data.reels) {
+          if (data.reels.length === 0) {
             setHasMore(false);
+          } else {
+            setReels(prev => !currentCursor ? data.reels : [...prev, ...data.reels]);
+            if (data.nextCursor) {
+              setCursor(data.nextCursor);
+            } else {
+              setHasMore(false);
+            }
           }
         }
       }
@@ -53,7 +77,7 @@ const ReelFeed: React.FC<ReelFeedProps> = ({ apiEndpoint = "/api/reels?limit=10"
     setLoading(true);
     setCursor(null);
     fetchReels(null);
-  }, [apiEndpoint]);
+  }, [apiEndpoint, seriesId]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -71,7 +95,8 @@ const ReelFeed: React.FC<ReelFeedProps> = ({ apiEndpoint = "/api/reels?limit=10"
         // Update URL to match current reel ID
         const currentReel = reels[index];
         if (currentReel) {
-          window.history.replaceState(null, '', `/reels/${currentReel.id}`);
+          const url = seriesId ? `/reels/${currentReel.id}?seriesId=${seriesId}` : `/reels/${currentReel.id}`;
+          window.history.replaceState(null, '', url);
         }
         
         // Fetch more if we're near the end
