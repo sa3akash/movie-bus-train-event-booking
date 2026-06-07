@@ -34,7 +34,7 @@ export const packageUploadWorker = new Worker(
       await job.updateProgress(90);
 
       // Step 7: Update DB
-      const publicEndpoint = process.env.MINIO_PUBLIC_URL;
+      const publicEndpoint = process.env.MINIO_ENDPOINT;
       await db.update(videos).set({
         status: "COMPLETED",
         hlsUrl: `${publicEndpoint}/${bucket}/${s3Prefix}/master.m3u8`,

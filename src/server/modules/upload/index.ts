@@ -139,7 +139,7 @@ export const uploadModule = new Elysia({ prefix: "/upload" })
           }),
         );
 
-        const publicEndpoint = process.env.MINIO_PUBLIC_URL;
+        const publicEndpoint = process.env.MINIO_ENDPOINT;
         const url = `${publicEndpoint}/${bucket}/${fileName}`;
 
         const [newImage] = await db
@@ -217,7 +217,7 @@ export const uploadModule = new Elysia({ prefix: "/upload" })
         const presignedUrl = await getSignedUrl(s3Client, command, {
           expiresIn: 3600,
         });
-        const publicEndpoint = process.env.MINIO_PUBLIC_URL;
+        const publicEndpoint = process.env.MINIO_ENDPOINT;
         const fileUrl = `${publicEndpoint}/${bucket}/${key}`;
 
         return {
@@ -354,7 +354,7 @@ export const uploadModule = new Elysia({ prefix: "/upload" })
           ),
         );
 
-        const publicEndpoint = process.env.MINIO_PUBLIC_URL;
+        const publicEndpoint = process.env.MINIO_ENDPOINT;
         const fileUrl = `${publicEndpoint}/${bucket}/${key}`;
 
         return { uploadId, key, urls, fileUrl };
@@ -407,7 +407,7 @@ export const uploadModule = new Elysia({ prefix: "/upload" })
             },
           }),
         );
-        const publicEndpoint = process.env.MINIO_PUBLIC_URL;
+        const publicEndpoint = process.env.MINIO_ENDPOINT;
         const fileUrl = `${publicEndpoint}/${bucket}/${key}`;
 
         // Create database record
