@@ -13,3 +13,4 @@ export * from "./event";
 export * from "./image";
 export * from "./video";
 export * from "./ads";
+export * from "./reels";

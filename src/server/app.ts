@@ -14,6 +14,7 @@ import { busses } from "./modules/busses";
 import { uploadModule } from "./modules/upload";
 import { videoModule } from "./modules/video";
 import { adsModule } from "./modules/ads";
+import { reelsModule } from "./modules/reels";
 import { openapi } from "@elysia/openapi";
 import "./queue/workers/analyze.worker";
 import "./queue/workers/transcode.worker";
@@ -64,6 +65,7 @@ export const app = new Elysia({ prefix: "/api", aot: true })
   .use(uploadModule)
   .use(videoModule)
   .use(adsModule)
+  .use(reelsModule)
   .get("/", "Hello Nextjs from elysiajs!");
 
 process.on("SIGINT", async () => {

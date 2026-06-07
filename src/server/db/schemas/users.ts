@@ -13,6 +13,7 @@ import { bookings, userCoupons } from "./booking";
 import { reviews, wishlist, reviewLikes, userRewards, rewardTransactions } from "./reviews";
 import { auditLogs, analyticsEvents } from "./audit";
 import { images } from "./image";
+import { reels, reelLikes, reelComments, reelShares, reelCommentLikes, savedReels } from "./reels";
 
 export const roles = pgTable("roles", {
   ...defaultColumns,
@@ -113,6 +114,16 @@ export const userSessionTable = pgTable("user_sessions", {
   index("idx_sessions_expiry").on(t.expiresAt),
 ]);
 
+export const userFollowers = pgTable("user_followers", {
+  ...defaultColumns,
+  followerId: varchar("follower_id", { length: 36 })
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+  followingId: varchar("following_id", { length: 36 })
+    .notNull()
+    .references(() => usersTable.id, { onDelete: "cascade" }),
+});
+
 export const userVerificationTable = pgTable("user_verification", {
   ...defaultColumns,
 
@@ -172,6 +183,27 @@ export const usersRelations = relations(usersTable, ({ many, one }) => ({
   avatar: one(images, {
     fields: [usersTable.avatarId],
     references: [images.id],
+  }),
+  reels: many(reels),
+  reelLikes: many(reelLikes),
+  reelComments: many(reelComments),
+  reelShares: many(reelShares),
+  reelCommentLikes: many(reelCommentLikes),
+  savedReels: many(savedReels),
+  followers: many(userFollowers, { relationName: "followers" }),
+  following: many(userFollowers, { relationName: "following" }),
+}));
+
+export const userFollowersRelations = relations(userFollowers, ({ one }) => ({
+  follower: one(usersTable, {
+    fields: [userFollowers.followerId],
+    references: [usersTable.id],
+    relationName: "following",
+  }),
+  following: one(usersTable, {
+    fields: [userFollowers.followingId],
+    references: [usersTable.id],
+    relationName: "followers",
   }),
 }));
 
