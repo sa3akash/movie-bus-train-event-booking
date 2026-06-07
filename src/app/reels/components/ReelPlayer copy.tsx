@@ -72,7 +72,7 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
     setSavesCount(saved ? Math.max(savesCount - 1, 0) : savesCount + 1);
     try {
       await fetch(`/api/reels/${reel.id}/save`, { method: "POST" });
-    } catch {
+    } catch (error) {
       setSaved(saved);
       setSavesCount(saved ? savesCount : Math.max(savesCount - 1, 0));
     }
@@ -83,7 +83,7 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
     setFollowing(!following);
     try {
       await fetch(`/api/reels/users/${reel.user.id}/follow`, { method: "POST" });
-    } catch {
+    } catch (error) {
       setFollowing(following);
     }
   };
@@ -138,7 +138,7 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
       {!isPlaying && isActive && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm">
-            <div className="w-0 h-0 border-t-8 border-b-8 border-l-14 border-t-transparent border-b-transparent border-l-white ml-1"></div>
+            <div className="w-0 h-0 border-t-8 border-b-8 border-l-[14px] border-t-transparent border-b-transparent border-l-white ml-1"></div>
           </div>
         </div>
       )}
@@ -195,13 +195,13 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
       </div>
 
       {/* Bottom Info Section */}
-      <div className="absolute bottom-0 left-0 w-full p-4 pb-6 bg-linear-to-t from-black/80 via-black/50 to-transparent z-10 pointer-events-none">
+      <div className="absolute bottom-0 left-0 w-full p-4 pb-6 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-10 pointer-events-none">
         <div className="flex items-center gap-3 mb-2 pointer-events-auto">
-          <div className="w-10 h-10 rounded-full bg-gray-500 border border-white/50 shrink-0 overflow-hidden cursor-pointer">
+          <div className="w-10 h-10 rounded-full bg-gray-500 border border-white/50 flex-shrink-0 overflow-hidden cursor-pointer">
             {reel.user?.avatarId ? (
               <img src={`/api/images/${reel.user.avatarId}`} alt="avatar" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-linear-to-br from-indigo-500 to-purple-600" />
+              <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600" />
             )}
           </div>
           <div className="flex flex-col">
@@ -248,14 +248,7 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
 
       <CommentsDrawer reelId={reel.id} isOpen={commentsOpen} onOpenChange={setCommentsOpen} />
 
-      <VideoProgressBar 
-        videoRef={videoRef} 
-        onSeek={(time) => {
-          if (videoRef.current) {
-            videoRef.current.currentTime = time;
-          }
-        }}
-      />
+      <VideoProgressBar videoRef={videoRef} />
     </div>
   );
 };

@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Heart, MessageCircle, Share2, Music, Tag, Bookmark, MoreVertical, Trash } from "lucide-react";
 import { CommentsDrawer } from "./CommentsDrawer";
-import { VideoProgressBar } from "./VideoProgressBar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -17,6 +16,12 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   
+  // Progress state
+  const [progress, setProgress] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [wasPlayingBeforeDrag, setWasPlayingBeforeDrag] = useState(false);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+
   // States from DB counters
   const [liked, setLiked] = useState(false); 
   const [saved, setSaved] = useState(false); 
@@ -56,6 +61,42 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
     }
   };
 
+  const handleTimeUpdate = () => {
+    if (videoRef.current && !isDragging) {
+      const current = videoRef.current.currentTime;
+      const duration = videoRef.current.duration;
+      if (duration > 0) {
+        setProgress((current / duration) * 100);
+      }
+    }
+  };
+
+  const handleProgressInteraction = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    if (!progressBarRef.current || !videoRef.current) return;
+    const rect = progressBarRef.current.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
+    const percentage = x / rect.width;
+    setProgress(percentage * 100);
+    videoRef.current.currentTime = percentage * (videoRef.current.duration || 0);
+  };
+
+  const handleDragStart = (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    setIsDragging(true);
+    if (videoRef.current) {
+      setWasPlayingBeforeDrag(!videoRef.current.paused);
+      videoRef.current.pause();
+    }
+    handleProgressInteraction(e);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    if (videoRef.current && wasPlayingBeforeDrag) {
+      videoRef.current.play();
+    }
+  };
+
   const handleLike = async () => {
     setLiked(!liked);
     setLikesCount(liked ? Math.max(likesCount - 1, 0) : likesCount + 1);
@@ -72,7 +113,7 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
     setSavesCount(saved ? Math.max(savesCount - 1, 0) : savesCount + 1);
     try {
       await fetch(`/api/reels/${reel.id}/save`, { method: "POST" });
-    } catch {
+    } catch (error) {
       setSaved(saved);
       setSavesCount(saved ? savesCount : Math.max(savesCount - 1, 0));
     }
@@ -83,7 +124,7 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
     setFollowing(!following);
     try {
       await fetch(`/api/reels/users/${reel.user.id}/follow`, { method: "POST" });
-    } catch {
+    } catch (error) {
       setFollowing(following);
     }
   };
@@ -132,13 +173,14 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
         loop
         playsInline
         onClick={handleVideoClick}
+        onTimeUpdate={handleTimeUpdate}
       />
 
       {/* Play/Pause Overlay Indicator */}
       {!isPlaying && isActive && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-16 h-16 bg-black/40 rounded-full flex items-center justify-center backdrop-blur-sm">
-            <div className="w-0 h-0 border-t-8 border-b-8 border-l-14 border-t-transparent border-b-transparent border-l-white ml-1"></div>
+            <div className="w-0 h-0 border-t-8 border-b-8 border-l-[14px] border-t-transparent border-b-transparent border-l-white ml-1"></div>
           </div>
         </div>
       )}
@@ -195,13 +237,13 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
       </div>
 
       {/* Bottom Info Section */}
-      <div className="absolute bottom-0 left-0 w-full p-4 pb-6 bg-linear-to-t from-black/80 via-black/50 to-transparent z-10 pointer-events-none">
+      <div className="absolute bottom-0 left-0 w-full p-4 pb-6 bg-gradient-to-t from-black/80 via-black/50 to-transparent z-10 pointer-events-none">
         <div className="flex items-center gap-3 mb-2 pointer-events-auto">
-          <div className="w-10 h-10 rounded-full bg-gray-500 border border-white/50 shrink-0 overflow-hidden cursor-pointer">
+          <div className="w-10 h-10 rounded-full bg-gray-500 border border-white/50 flex-shrink-0 overflow-hidden cursor-pointer">
             {reel.user?.avatarId ? (
               <img src={`/api/images/${reel.user.avatarId}`} alt="avatar" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full bg-linear-to-br from-indigo-500 to-purple-600" />
+              <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600" />
             )}
           </div>
           <div className="flex flex-col">
@@ -248,14 +290,28 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
 
       <CommentsDrawer reelId={reel.id} isOpen={commentsOpen} onOpenChange={setCommentsOpen} />
 
-      <VideoProgressBar 
-        videoRef={videoRef} 
-        onSeek={(time) => {
-          if (videoRef.current) {
-            videoRef.current.currentTime = time;
-          }
-        }}
-      />
+      {/* Progress Bar Container */}
+      <div 
+        className="absolute bottom-0 left-0 w-full h-6 z-50 cursor-pointer group/progress flex items-end pb-2 touch-none"
+        ref={progressBarRef}
+        onClick={handleProgressInteraction}
+        onMouseMove={(e) => isDragging && handleProgressInteraction(e)}
+        onMouseDown={handleDragStart}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+        onTouchMove={(e) => isDragging && handleProgressInteraction(e)}
+        onTouchStart={handleDragStart}
+        onTouchEnd={handleDragEnd}
+      >
+        <div className="w-full h-1 bg-white/30 relative transition-all group-hover/progress:h-1.5">
+          <div 
+            className="h-full bg-white relative" 
+            style={{ width: `${progress}%` }}
+          >
+            <div className={`absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow transition-opacity ${isDragging ? 'opacity-100' : 'opacity-0 group-hover/progress:opacity-100'} translate-x-1/2`} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
