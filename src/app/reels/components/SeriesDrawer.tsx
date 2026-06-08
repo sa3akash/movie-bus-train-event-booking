@@ -78,7 +78,7 @@ export const SeriesDrawer: React.FC<SeriesDrawerProps> = ({ seriesId, isOpen, on
                 return (
                   <Link 
                      key={ep.id}
-                     href={`/reels/${ep.id}?seriesId=${seriesId}`}
+                     href={`/reels/series/${seriesId}/${ep.id}`}
                      onClick={() => onOpenChange(false)}
                      className={`flex gap-3 p-3 rounded-xl border transition-all hover:bg-white/5 group ${isCurrent ? 'bg-indigo-900/30 border-indigo-500/50' : 'border-white/5 bg-white/5'}`}
                   >

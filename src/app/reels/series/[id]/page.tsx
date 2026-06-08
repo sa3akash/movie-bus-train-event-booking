@@ -12,7 +12,7 @@ export default async function SeriesRedirectPage({ params }: { params: Promise<{
   });
   
   if (firstEpisode) {
-     redirect(`/reels/${firstEpisode.id}?seriesId=${id}`);
+     redirect(`/reels/series/${id}/${firstEpisode.id}`);
   } else {
      redirect("/reels");
   }

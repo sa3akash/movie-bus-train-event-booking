@@ -95,7 +95,7 @@ const ReelFeed: React.FC<ReelFeedProps> = ({ apiEndpoint = "/api/reels?limit=10"
         // Update URL to match current reel ID
         const currentReel = reels[index];
         if (currentReel) {
-          const url = seriesId ? `/reels/${currentReel.id}?seriesId=${seriesId}` : `/reels/${currentReel.id}`;
+          const url = seriesId ? `/reels/series/${seriesId}/${currentReel.id}` : `/reels/${currentReel.id}`;
           window.history.replaceState(null, '', url);
         }
         
@@ -159,7 +159,7 @@ const ReelFeed: React.FC<ReelFeedProps> = ({ apiEndpoint = "/api/reels?limit=10"
             <div key={reel.id} className="w-full h-full shrink-0 snap-start sm:snap-center sm:py-6 flex justify-center items-center relative">
               <div className="w-full h-full sm:h-full sm:max-w-[400px] sm:rounded-2xl sm:overflow-hidden relative bg-black sm:shadow-2xl sm:border sm:border-white/10">
                 {isNear ? (
-                  <ReelPlayer reel={reel} isActive={index === activeIndex} />
+                  <ReelPlayer reel={reel} isActive={index === activeIndex} onEnded={scrollDown} />
                 ) : (
                   <div className="w-full h-full bg-gray-900" />
                 )}

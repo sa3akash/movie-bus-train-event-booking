@@ -310,7 +310,7 @@ export function useShakaPlayer({
       setTextTracks(allTextTracks);
       const activeTextTrack = allTextTracks.find((t: any) => t.active);
       if (activeTextTrack) setSelectedTextTrackId(activeTextTrack.id.toString());
-      setIsTextTrackVisible(player.isTextTrackVisible());
+      setIsTextTrackVisible(player.isTextVisible());
 
       const uniqueAudioLangs = Array.from(new Set(tracks.map((t: any) => t.language).filter(Boolean)));
       setAudioLanguages(uniqueAudioLangs.map(lang => ({ language: lang })));
@@ -356,16 +356,7 @@ export function useShakaPlayer({
       }
     }
 
-  }, [
-    shaka, isSupported, videoRef, containerRef, playerRef, propsRef, 
-    adManagerRef, registeredAdsRef, adMetadataMapRef, currentAdRef,
-    setIsAdPlaying, isAdPlayingRef, setAdTitle, setCanSkipAd, setAdTimeRemaining, 
-    setAdTimeUntilSkippable, setAdCurrentTime, setAdDuration, setDuration, 
-    setCurrentTime, setVideoTracks, setActiveTrackHeight, setTextTracks, 
-    setSelectedTextTrackId, setIsTextTrackVisible, setAudioLanguages, 
-    setSelectedAudioLanguage, setIsLiveState, setSeekRange, setChapters, 
-    setIsBuffering, loadVttStoryboard
-  ]);
+  }, [shaka, isSupported, videoRef, containerRef, playerRef, propsRef, adManagerRef, registeredAdsRef, adMetadataMapRef, currentAdRef, setIsAdPlaying, isAdPlayingRef, setAdTitle, setCanSkipAd, setAdTimeRemaining, setAdTimeUntilSkippable, setAdCurrentTime, setAdDuration, setDuration, setCurrentTime, setVideoTracks, setActiveTrackHeight, setTextTracks, setSelectedTextTrackId, setIsTextTrackVisible, setAudioLanguages, setSelectedAudioLanguage, setIsLiveState, setSeekRange, setChapters, setIsBuffering]);
 
   return {
     initializePlayer,

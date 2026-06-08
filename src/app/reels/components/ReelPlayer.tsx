@@ -11,9 +11,10 @@ import { useRouter } from "next/navigation";
 interface ReelPlayerProps {
   reel: any;
   isActive: boolean;
+  onEnded?: () => void;
 }
 
-export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
+export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive, onEnded }) => {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -166,7 +167,7 @@ export const ReelPlayer: React.FC<ReelPlayerProps> = ({ reel, isActive }) => {
           ref={videoRef}
           src={videoUrl}
           className="absolute inset-0 w-full h-full object-cover cursor-pointer"
-          loop
+          {...(onEnded ? { onEnded } : { loop: true })}
           playsInline
           onClick={handleVideoClick}
         />

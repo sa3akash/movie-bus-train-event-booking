@@ -33,22 +33,22 @@ export function useVideoTracks({
 
   const toggleTextTrackVisibility = useCallback(() => {
     if (!playerRef.current) return;
-    const isVisible = playerRef.current.isTextTrackVisible();
-    playerRef.current.setTextTrackVisibility(!isVisible);
+    const isVisible = playerRef.current.isTextVisible();
+    playerRef.current.setTextVisibility(!isVisible);
     setIsTextTrackVisible(!isVisible);
   }, [playerRef]);
 
   const selectTextTrack = useCallback((trackId: string | null) => {
     if (!playerRef.current) return;
     if (trackId === null) {
-      playerRef.current.setTextTrackVisibility(false);
+      playerRef.current.setTextVisibility(false);
       setSelectedTextTrackId(null);
       setIsTextTrackVisible(false);
     } else {
       const track = playerRef.current.getTextTracks().find((t: any) => t.id.toString() === trackId);
       if (track) {
         playerRef.current.selectTextTrack(track);
-        playerRef.current.setTextTrackVisibility(true);
+        playerRef.current.setTextVisibility(true);
         setSelectedTextTrackId(trackId);
         setIsTextTrackVisible(true);
       }
