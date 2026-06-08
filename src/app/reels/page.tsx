@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import Link from "next/link";
 import { Loader2, Play, Heart, Eye, Film, Layers } from "lucide-react";
+import Image from "next/image";
 
 export default function ReelsGridPage() {
   const [reels, setReels] = useState<any[]>([]);
@@ -123,27 +124,45 @@ export default function ReelsGridPage() {
                 <Link 
                   key={series.id} 
                   href={`/reels/series/${series.id}`}
-                  className="group bg-neutral-900 rounded-2xl overflow-hidden border border-white/5 hover:border-indigo-500/50 transition-colors"
+                  className="group relative rounded-2xl overflow-hidden border border-white/10 hover:border-indigo-500/50 transition-all shadow-xl hover:shadow-indigo-500/20 block aspect-2/3 bg-neutral-900"
                 >
-                  <div className="aspect-video bg-neutral-800 relative">
-                     {/* Placeholder cover image if we don't have an actual image rendered */}
-                     <div className="absolute inset-0 bg-linear-to-br from-indigo-900/50 to-purple-900/50 flex items-center justify-center">
-                        <Layers className="w-12 h-12 text-white/20 group-hover:scale-110 transition-transform" />
-                     </div>
+                  {/* Background Image with Hover Zoom */}
+                  <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-110">
+                     <Image src={series.coverImage.url} fill alt={series.title} className="object-cover" placeholder="blur" blurDataURL={series.coverImage.blurhashData} />
                   </div>
-                  <div className="p-4">
-                    <h3 className="text-lg font-bold text-white group-hover:text-indigo-400 transition-colors line-clamp-1">{series.title}</h3>
-                    <p className="text-sm text-neutral-400 mt-1 line-clamp-2">{series.description || "No description provided."}</p>
-                    <div className="mt-4 flex items-center gap-3">
-                       <span className="text-xs font-semibold bg-white/10 text-white px-2 py-1 rounded">
-                         {series.totalEpisodes || '?'} Episodes
-                       </span>
-                       {series.isPremium && (
-                         <span className="text-xs font-semibold bg-yellow-500/10 text-yellow-500 px-2 py-1 rounded">
-                           Premium
-                         </span>
-                       )}
+                  
+                  {/* Gradient Overlay */}
+                  <div className="absolute inset-0 bg-linear-to-t from-black/90 via-black/40 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {/* Top Badges */}
+                  <div className="absolute top-3 left-3 flex flex-col gap-2">
+                    {series.isPremium && (
+                      <span className="text-[10px] font-bold tracking-wider uppercase bg-linear-to-r from-yellow-600 to-yellow-400 text-black px-2 py-1 rounded shadow-lg">
+                        Premium
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Hover Play Button */}
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
+                    <div className="w-16 h-16 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 shadow-[0_0_30px_rgba(255,255,255,0.2)] transform scale-50 group-hover:scale-100 transition-all duration-300 ease-out">
+                      <Play className="w-8 h-8 text-white ml-1" fill="currentColor" />
                     </div>
+                  </div>
+
+                  {/* Bottom Content */}
+                  <div className="absolute bottom-0 left-0 right-0 p-5 transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300 ease-out">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[11px] font-bold bg-white/20 backdrop-blur-sm text-white px-2.5 py-1 rounded-sm border border-white/10 uppercase tracking-wide">
+                        {series.totalEpisodes || '?'} Episodes
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-extrabold text-white leading-tight drop-shadow-lg line-clamp-2 mb-1 group-hover:text-indigo-300 transition-colors">
+                      {series.title}
+                    </h3>
+                    <p className="text-sm text-white/60 line-clamp-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+                      {series.description || "Tap to watch series"}
+                    </p>
                   </div>
                 </Link>
               ))}

@@ -1,9 +1,11 @@
 import ffmpeg from "fluent-ffmpeg";
-import { Job } from "bullmq";
 import path from "path";
 import fs from "fs/promises";
 import sharp from "sharp";
 import { decode, encode } from "blurhash";
+import { resourceManager } from "../cpu-manager";
+
+sharp.concurrency(resourceManager.getSharpConcurrency()); // Dynamically limit sharp threads
 
 export interface TargetResolution {
   name: string;
@@ -44,7 +46,7 @@ export function extractAudio(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     ffmpeg(originalPath)
-      .outputOptions(["-c:a aac", "-b:a 128k", "-vn"])
+      .outputOptions(["-c:a aac", "-b:a 128k", "-vn", `-threads ${resourceManager.getFfmpegThreads()}`])
       .output(audioPath)
       .on("end", () => resolve())
       .on("error", (err) => reject(err))
@@ -70,6 +72,7 @@ export function transcodeResolution(
         "-preset fast",
         "-g 48",
         "-an",
+        `-threads ${resourceManager.getFfmpegThreads()}`,
       ])
       .output(outPath)
       .on("progress", (p) => {
@@ -98,24 +101,26 @@ export async function generateThumbnails(
   outputDir: string,
   timestamps: number[],
 ): Promise<string[]> {
-  const pngFiles: string[] = await new Promise((resolve, reject) => {
-    let generatedFiles: string[] = [];
-    ffmpeg(originalPath)
-      .on("filenames", (filenames) => {
-        generatedFiles = filenames.map((f: string) => path.join(outputDir, f));
-      })
-      .on("end", () => resolve(generatedFiles))
-      .on("error", (err) => reject(err))
-      .screenshots({
-        timestamps,
-        folder: outputDir,
-        filename: "thumbnail-%i.png",
-      });
-  });
-
   const optimizedFiles: string[] = [];
-  for (const pngFile of pngFiles) {
+
+  for (let i = 0; i < timestamps.length; i++) {
+    const time = timestamps[i];
+    const pngFile = path.join(outputDir, `thumbnail-${i + 1}.png`);
     const webpFile = pngFile.replace(".png", ".webp");
+
+    // Use fast-seek (-ss before -i) to instantly jump to the frame
+    // This prevents ffmpeg from decoding the entire video into RAM
+    await new Promise<void>((resolve, reject) => {
+      ffmpeg(originalPath)
+        .seekInput(time)
+        .frames(1)
+        .outputOptions([`-threads ${resourceManager.getFfmpegThreads()}`])
+        .output(pngFile)
+        .on("end", () => resolve())
+        .on("error", (err) => reject(err))
+        .run();
+    });
+
     const fileBuffer = await fs.readFile(pngFile);
     await sharp(fileBuffer)
       .resize(1280, 720, { fit: "inside", withoutEnlargement: true })
@@ -151,6 +156,7 @@ export function generateStoryboardSprite(
       .outputOptions([
         "-an",
         ...codecOptions,
+        `-threads ${resourceManager.getFfmpegThreads()}`,
       ])
       .output(outputPattern)
       .on("end", () => resolve())

@@ -118,6 +118,7 @@ export type SeriesType = {
   defaultPricePerEpisode?: number | null;
   totalViewsCount?: number | null;
   coverImageId?: string | null;
+  coverImage?: { url: string } | null;
 };
 
 function DragHandle({ id }: { id: string }) {
@@ -497,9 +498,9 @@ export function DataTable({
                 Rows per page
               </Label>
               <Select
-                value={`${table.getState().pagination.pageSize}`}
+                value={table.getState().pagination.pageSize}
                 onValueChange={(value) => {
-                  table.setPageSize(Number(value))
+                  if (value) table.setPageSize(value as number)
                 }}
               >
                 <SelectTrigger size="sm" className="w-20 bg-[#121212] border-white/10" id="rows-per-page">
@@ -509,7 +510,7 @@ export function DataTable({
                 </SelectTrigger>
                 <SelectContent side="top" className="bg-[#121212] text-white border-white/10">
                   {[10, 20, 30, 40, 50].map((pageSize) => (
-                    <SelectItem key={pageSize} value={`${pageSize}`} className="focus:bg-white/10 focus:text-white">
+                    <SelectItem key={pageSize} value={pageSize} className="focus:bg-white/10 focus:text-white">
                       {pageSize}
                     </SelectItem>
                   ))}
@@ -606,8 +607,8 @@ function TableCellViewer({ item }: { item: SeriesType }) {
       <DrawerTrigger asChild>
         <Button variant="link" className="w-fit px-0 text-left text-white font-semibold hover:text-indigo-400 transition-colors group">
           <div className="flex items-center gap-3">
-            {item.coverImageId ? (
-              <img src={`/api/images/${item.coverImageId}`} className="w-8 h-12 object-cover rounded shadow-sm" alt="" />
+            {item.coverImage?.url || item.coverImageId ? (
+              <img src={item.coverImage?.url || `/api/images/${item.coverImageId}`} className="w-8 h-12 object-cover rounded shadow-sm" alt="" />
             ) : (
               <div className="w-8 h-12 bg-white/5 rounded flex items-center justify-center">
                 <IconLoader className="w-4 h-4 text-white/20" />
@@ -620,7 +621,7 @@ function TableCellViewer({ item }: { item: SeriesType }) {
       <DrawerContent className="bg-[#121212] text-white border-white/10 outline-none w-full md:w-[500px]">
         <DrawerHeader className="gap-1 border-b border-white/10 pb-4">
           <DrawerTitle className="text-xl flex items-center gap-3">
-            {item.coverImageId && <img src={`/api/images/${item.coverImageId}`} className="w-12 h-16 object-cover rounded shadow-sm" alt="" />}
+            {(item.coverImage?.url || item.coverImageId) && <img src={item.coverImage?.url || `/api/images/${item.coverImageId}`} className="w-12 h-16 object-cover rounded shadow-sm" alt="" />}
             <span className="line-clamp-2">{item.title}</span>
           </DrawerTitle>
           <DrawerDescription className="text-white/50">

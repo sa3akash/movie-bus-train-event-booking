@@ -76,7 +76,6 @@ export function runShakaPackager(
 
     const proc = spawn("packager", args, {
       stdio: "inherit",
-      shell: true,
     });
 
     proc.on("close", (code) => {

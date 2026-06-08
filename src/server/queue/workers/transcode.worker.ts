@@ -5,6 +5,7 @@ import { videos } from "../../db/schemas/video";
 import { eq } from "drizzle-orm";
 import { transcodeResolution } from "../transcoder/ffmpeg";
 import { redisConnection } from "../index";
+import { resourceManager } from "../cpu-manager";
 import os from "os";
 
 export const transcodeWorker = new Worker(
@@ -33,6 +34,6 @@ export const transcodeWorker = new Worker(
   },
   { 
     connection: redisConnection, 
-    concurrency: Math.max(1, Math.floor(os.cpus().length / 2)) 
+    concurrency: resourceManager.getTranscodeWorkerConcurrency() 
   }
 );

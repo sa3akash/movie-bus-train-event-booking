@@ -142,6 +142,7 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
         orderBy: [desc(reelSeries.createdAt)],
         with: {
            user: { columns: { id: true, name: true, avatarId: true } },
+           coverImage: true,
         }
       });
 
@@ -339,6 +340,7 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
   .post(
     "/series",
     async ({ body, user }) => {
+
       const [newSeries] = await db
         .insert(reelSeries)
         .values({
@@ -358,6 +360,7 @@ export const reelsModule = new Elysia({ prefix: "/reels" })
           language: body.language,
           ageRating: body.ageRating,
           userId: user.id,
+          
         })
         .returning();
       return { success: true, series: newSeries };

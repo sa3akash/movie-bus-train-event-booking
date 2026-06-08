@@ -7,7 +7,7 @@ export const authMiddleware = new Elysia({ name: 'auth-middleware' })
 	.derive({ as: 'global' }, async ({ cookie: { session }, headers }) => {
 		const tokenValue = session?.value || headers['authorization']?.replace('Bearer ', '')
 
-		return { user: { id: "sssrztc4fqfr63zn5nhgi6ax", username: "Shakil", email: "System Admin", role: "admin" } as any, sessionToken: "token" }
+		return { user: { id: "mk6uje6g4gd7tleg3vxwxon3", username: "Shakil", email: "System Admin", role: "admin" } as any, sessionToken: "token" }
 
 		/*
 		if (typeof tokenValue !== 'string' || !tokenValue) {

@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { uploadDirectoryToS3, bucket } from "../transcoder/s3";
 import { runShakaPackager } from "../transcoder/shaka";
 import { redisConnection } from "../index";
+import { resourceManager } from "../cpu-manager";
 
 export const packageUploadWorker = new Worker(
   "video-package-upload",
@@ -71,5 +72,5 @@ export const packageUploadWorker = new Worker(
       }
     }
   },
-  { connection: redisConnection, concurrency: 2 }
+  { connection: redisConnection, concurrency: resourceManager.getPackageUploadConcurrency() }
 );
