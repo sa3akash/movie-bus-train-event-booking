@@ -1,26 +1,16 @@
 name: Deploy
 
 on:
-  workflow_run:
-    workflows: ["Push to GHCR", "Push to Docker Hub"]
-    types:
-      - completed
-    branches: [ "main" ]
-  workflow_dispatch:
+  workflow_call:
 
 jobs:
   deploy:
-    name: Deploy Application
     runs-on: ubuntu-latest
-    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
-    env: 
+    env:
       ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
       ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
       APP_NAME: ${{ github.event.repository.name }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
       - name: Install ArgoCD CLI
         run: |
           curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
@@ -31,32 +21,3 @@ jobs:
         run: |
           argocd app sync $APP_NAME --server $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN --insecure
           argocd app wait $APP_NAME --server $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN --insecure
-          
-      # --- NOTIFICATIONS (Uncomment/keep the ones you want) ---
-      
-      # - name: Notify Discord
-      #   uses: ./.github/actions/notify-discord
-      #   if: always()
-      #   with:
-      #     status: ${{ job.status }}
-      #     webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
-      #     app_name: ${{ env.APP_NAME }}
-
-      # - name: Notify Slack
-      #   uses: ./.github/actions/notify-slack
-      #   if: always()
-      #   with:
-      #     status: ${{ job.status }}
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-      #     app_name: ${{ env.APP_NAME }}
-
-      # - name: Notify WhatsApp
-      #   uses: ./.github/actions/notify-whatsapp
-      #   if: always()
-      #   with:
-      #     status: ${{ job.status }}
-      #     twilio_account_sid: ${{ secrets.TWILIO_ACCOUNT_SID }}
-      #     twilio_auth_token: ${{ secrets.TWILIO_AUTH_TOKEN }}
-      #     from_number: ${{ secrets.TWILIO_WHATSAPP_NUMBER }}
-      #     to_number: ${{ secrets.YOUR_WHATSAPP_NUMBER }}
-      #     app_name: ${{ env.APP_NAME }}

@@ -1,0 +1,45 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  lint:
+    name: Code Quality (Lint)
+    uses: ./.github/workflows/lint.yml
+
+  build-test:
+    name: Build & Test
+    needs: lint
+    uses: ./.github/workflows/build-test.yml
+
+  image-scan:
+    name: Security Scan (Trivy)
+    needs: build-test
+    uses: ./.github/workflows/image-scan.yml
+
+  publish:
+    name: Push Docker Images
+    needs: image-scan
+    if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/publish.yml
+    secrets: inherit
+
+  deploy:
+    name: Deploy to ArgoCD
+    needs: publish
+    if: github.event_name != 'pull_request'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+
+  notify:
+    name: Send Notifications
+    needs: [lint, build-test, image-scan, publish, deploy]
+    if: always()
+    uses: ./.github/workflows/notify.yml
+    secrets: inherit
+    with:
+      status: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') && 'failure' || 'success' }}

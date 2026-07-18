@@ -1,48 +1,37 @@
-name: Pull Request Check
+name: Notify
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_call:
+    inputs:
+      status:
+        required: true
+        type: string
 
 jobs:
-  build:
-    name: Build test
+  notify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install --frozen-lockfile
-
-      - name: Check build
-        run: bun run build
-
-      # --- NOTIFICATIONS ON FAILURE ---
+      # --- NOTIFICATIONS (Uncomment/keep the ones you want) ---
+      
       # - name: Notify Discord
       #   uses: ./.github/actions/notify-discord
-      #   if: failure()
       #   with:
-      #     status: failure
+      #     status: ${{ inputs.status }}
       #     webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
 
       # - name: Notify Slack
       #   uses: ./.github/actions/notify-slack
-      #   if: failure()
       #   with:
-      #     status: failure
+      #     status: ${{ inputs.status }}
       #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
 
       # - name: Notify WhatsApp
       #   uses: ./.github/actions/notify-whatsapp
-      #   if: failure()
       #   with:
-      #     status: failure
+      #     status: ${{ inputs.status }}
       #     twilio_account_sid: ${{ secrets.TWILIO_ACCOUNT_SID }}
       #     twilio_auth_token: ${{ secrets.TWILIO_AUTH_TOKEN }}
       #     from_number: ${{ secrets.TWILIO_WHATSAPP_NUMBER }}

@@ -1,22 +1,15 @@
-name: Image Quality & Security Scan
+name: Security Scan
 
 on:
-  pull_request:
-    branches: ["main"]
-  push:
-    branches: ["main"]
+  workflow_call:
 
 jobs:
-  scan:
-    name: Build & Scan Docker Image
+  image-scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Build temporary Docker image
         run: docker build -t temp-image:latest .
-
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
@@ -26,28 +19,3 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
-
-      # --- NOTIFICATIONS ON FAILURE ---
-      # - name: Notify Discord
-      #   uses: ./.github/actions/notify-discord
-      #   if: failure()
-      #   with:
-      #     status: failure
-      #     webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
-
-      # - name: Notify Slack
-      #   uses: ./.github/actions/notify-slack
-      #   if: failure()
-      #   with:
-      #     status: failure
-      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
-
-      # - name: Notify WhatsApp
-      #   uses: ./.github/actions/notify-whatsapp
-      #   if: failure()
-      #   with:
-      #     status: failure
-      #     twilio_account_sid: ${{ secrets.TWILIO_ACCOUNT_SID }}
-      #     twilio_auth_token: ${{ secrets.TWILIO_AUTH_TOKEN }}
-      #     from_number: ${{ secrets.TWILIO_WHATSAPP_NUMBER }}
-      #     to_number: ${{ secrets.YOUR_WHATSAPP_NUMBER }}
