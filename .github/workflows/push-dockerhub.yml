@@ -1,0 +1,50 @@
+name: Push to Docker Hub
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ 'v*.*.*' ]
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/ticket
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      # --- NOTIFICATIONS ON FAILURE ---
+      - name: Notify Discord on Failure
+        if: failure()
+        run: curl -H "Content-Type: application/json" -d '{"content": "❌ **Failure**: `${{ github.workflow }}` failed. Could not push to DockerHub!"}' ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Notify Slack on Failure
+        if: failure()
+        run: curl -X POST -H 'Content-type: application/json' --data '{"text":"❌ *Failure*: `${{ github.workflow }}` failed. Could not push to DockerHub!"}' ${{ secrets.SLACK_WEBHOOK }}
+      - name: Notify WhatsApp on Failure
+        if: failure()
+        run: |
+          curl -X POST https://api.twilio.com/2010-04-01/Accounts/${{ secrets.TWILIO_ACCOUNT_SID }}/Messages.json \
+          --data-urlencode "From=whatsapp:${{ secrets.TWILIO_WHATSAPP_NUMBER }}" \
+          --data-urlencode "To=whatsapp:${{ secrets.YOUR_WHATSAPP_NUMBER }}" \
+          --data-urlencode "Body=❌ Failure: ${{ github.workflow }} failed. Could not push to DockerHub!" \
+          -u ${{ secrets.TWILIO_ACCOUNT_SID }}:${{ secrets.TWILIO_AUTH_TOKEN }}

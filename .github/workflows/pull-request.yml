@@ -1,0 +1,40 @@
+name: Pull Request Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build:
+    name: Build test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check build
+        run: bun run build
+
+      # --- NOTIFICATIONS ON FAILURE ---
+      - name: Notify Discord on Failure
+        if: failure()
+        run: curl -H "Content-Type: application/json" -d '{"content": "❌ **Failure**: `${{ github.workflow }}` failed in `${{ github.repository }}`. PR Build broken!"}' ${{ secrets.DISCORD_WEBHOOK }}
+      - name: Notify Slack on Failure
+        if: failure()
+        run: curl -X POST -H 'Content-type: application/json' --data '{"text":"❌ *Failure*: `${{ github.workflow }}` failed. PR Build broken!"}' ${{ secrets.SLACK_WEBHOOK }}
+      - name: Notify WhatsApp on Failure
+        if: failure()
+        run: |
+          curl -X POST https://api.twilio.com/2010-04-01/Accounts/${{ secrets.TWILIO_ACCOUNT_SID }}/Messages.json \
+          --data-urlencode "From=whatsapp:${{ secrets.TWILIO_WHATSAPP_NUMBER }}" \
+          --data-urlencode "To=whatsapp:${{ secrets.YOUR_WHATSAPP_NUMBER }}" \
+          --data-urlencode "Body=❌ Failure: ${{ github.workflow }} failed. PR Build broken!" \
+          -u ${{ secrets.TWILIO_ACCOUNT_SID }}:${{ secrets.TWILIO_AUTH_TOKEN }}

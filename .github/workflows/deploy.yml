@@ -1,0 +1,149 @@
+name: Deploy
+
+on:
+  workflow_run:
+    workflows: ["Push to GHCR", "Push to Docker Hub"]
+    types:
+      - completed
+    branches: [ "main" ]
+  workflow_dispatch:
+
+env: 
+  ARGOCD_SERVER: ${{ secrets.ARGOCD_SERVER }}
+  ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_TOKEN }}
+  APP_NAME: ${{ github.repository_slug }}
+
+jobs:
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd-linux-amd64 https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64
+          sudo install -m 555 argocd-linux-amd64 /usr/local/bin/argocd
+          rm argocd-linux-amd64
+
+      - name: Sync ArgoCD Application
+        run: |
+          argocd app sync $APP_NAME --server $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN --insecure
+          argocd app wait $APP_NAME --server $ARGOCD_SERVER --auth-token $ARGOCD_AUTH_TOKEN --insecure
+          
+# Notify Discord on Success
+      # --- NOTIFICATIONS (Uncomment/keep the ones you want) ---
+      
+      - name: Notify Discord (Success)
+        if: success()
+        run: |
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "embeds": [
+              {
+                "title": "✅ Deployment Success",
+                "description": "**${{ env.APP_NAME }}** has been successfully deployed!",
+                "color": 35286,
+                "fields": [
+                  { "name": "Triggered by", "value": "${{ github.actor }}", "inline": true },
+                  { "name": "Workflow", "value": "${{ github.workflow }}", "inline": true },
+                  { "name": "Repository", "value": "${{ github.repository }}", "inline": true },
+                  { "name": "Run URL", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "inline": false }
+                ],
+                "timestamp": "${{ github.event.workflow_run.run_started_at || github.event.head_commit.timestamp }}",
+                "footer": { "text": "${{ github.repository }}" }
+              }
+            ]
+          }'
+      - name: Notify Discord (Failure)
+        if: failure()
+        run: |
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "embeds": [
+              {
+                "title": "❌ Deployment Failed",
+                "description": "Deployment for **${{ env.APP_NAME }}** has failed.",
+                "color": 16711680,
+                "fields": [
+                  { "name": "Triggered by", "value": "${{ github.actor }}", "inline": true },
+                  { "name": "Workflow", "value": "${{ github.workflow }}", "inline": true },
+                  { "name": "Repository", "value": "${{ github.repository }}", "inline": true },
+                  { "name": "Run URL", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "inline": false }
+                ],
+                "timestamp": "${{ github.event.workflow_run.run_started_at || github.event.head_commit.timestamp }}",
+                "footer": { "text": "${{ github.repository }}" }
+              }
+            ]
+          }'
+
+      - name: Notify Slack (Success)
+        if: success()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "text": "✅ *Deployment Success*",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*${{ env.APP_NAME }}* deployment completed successfully!"
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  { "type": "mrkdwn", "text": "*Triggered by:*\n${{ github.actor }}" },
+                  { "type": "mrkdwn", "text": "*Workflow:*\n${{ github.workflow }}" },
+                  { "type": "mrkdwn", "text": "*Repository:*\n${{ github.repository }}" },
+                  { "type": "mrkdwn", "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>" }
+                ]
+              }
+            ]
+          }'
+      - name: Notify Slack (Failure)
+        if: failure()
+        run: |
+          curl -X POST ${{ secrets.SLACK_WEBHOOK }} \
+          -H 'Content-Type: application/json' \
+          -d '{
+            "text": "❌ *Deployment Failed*",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "❌ Deployment for *${{ env.APP_NAME }}* has failed."
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  { "type": "mrkdwn", "text": "*Triggered by:*\n${{ github.actor }}" },
+                  { "type": "mrkdwn", "text": "*Workflow:*\n${{ github.workflow }}" },
+                  { "type": "mrkdwn", "text": "*Repository:*\n${{ github.repository }}" },
+                  { "type": "mrkdwn", "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>" }
+                ]
+              }
+            ]
+          }'
+
+      - name: Notify WhatsApp via Twilio (Success)
+        if: success()
+        run: |
+          curl -X POST https://api.twilio.com/2010-04-01/Accounts/${{ secrets.TWILIO_ACCOUNT_SID }}/Messages.json \
+          --data-urlencode "From=whatsapp:${{ secrets.TWILIO_WHATSAPP_NUMBER }}" \
+          --data-urlencode "To=whatsapp:${{ secrets.YOUR_WHATSAPP_NUMBER }}" \
+          --data-urlencode "Body=✅ Success: Deployment for ${{ env.APP_NAME }} succeeded." \
+          -u ${{ secrets.TWILIO_ACCOUNT_SID }}:${{ secrets.TWILIO_AUTH_TOKEN }}
+      - name: Notify WhatsApp via Twilio (Failure)
+        if: failure()
+        run: |
+          curl -X POST https://api.twilio.com/2010-04-01/Accounts/${{ secrets.TWILIO_ACCOUNT_SID }}/Messages.json \
+          --data-urlencode "From=whatsapp:${{ secrets.TWILIO_WHATSAPP_NUMBER }}" \
+          --data-urlencode "To=whatsapp:${{ secrets.YOUR_WHATSAPP_NUMBER }}" \
+          --data-urlencode "Body=❌ Failure: Deployment for ${{ env.APP_NAME }} failed." \
+          -u ${{ secrets.TWILIO_ACCOUNT_SID }}:${{ secrets.TWILIO_AUTH_TOKEN }}
