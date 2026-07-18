@@ -16,6 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
     outputs:
       tag: ${{ steps.tag.outputs.new_tag }}
       version: ${{ steps.tag.outputs.new_version }}
