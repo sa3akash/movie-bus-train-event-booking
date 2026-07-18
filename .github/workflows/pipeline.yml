@@ -7,25 +7,16 @@ on:
     branches: ["main"]
 
 jobs:
-  lint:
-    name: Code Quality (Lint)
-    uses: ./.github/workflows/lint.yml
+  ci:
+    name: Continuous Integration (Lint & Build)
+    uses: ./.github/workflows/ci.yml
 
-  build-test:
-    name: Build & Test
-    needs: lint
-    uses: ./.github/workflows/build-test.yml
-
-  image-scan:
-    name: Security Scan (Trivy)
-    needs: build-test
-    uses: ./.github/workflows/image-scan.yml
-
-  publish:
-    name: Push Docker Images
-    needs: image-scan
-    if: github.event_name != 'pull_request'
-    uses: ./.github/workflows/publish.yml
+  docker:
+    name: Docker Image (Scan & Push)
+    needs: ci
+    uses: ./.github/workflows/docker.yml
+    with:
+      push: ${{ github.event_name != 'pull_request' }}
     secrets: inherit
     permissions:
       contents: read
@@ -33,14 +24,14 @@ jobs:
 
   deploy:
     name: Deploy to ArgoCD
-    needs: publish
+    needs: docker
     if: github.event_name != 'pull_request'
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
 
   notify:
     name: Send Notifications
-    needs: [lint, build-test, image-scan, publish, deploy]
+    needs: [ci, docker, deploy]
     if: always()
     uses: ./.github/workflows/notify.yml
     secrets: inherit
