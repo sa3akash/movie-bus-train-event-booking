@@ -7,13 +7,23 @@ on:
     branches: ["main"]
 
 jobs:
+  release:
+    name: Auto Release
+    if: github.event_name == 'push'
+    uses: ./.github/workflows/release.yml
+    secrets: inherit
+
   ci:
-    name: Continuous Integration (Lint & Build)
+    name: Continuous Integration (Lint, Test & Build)
+    # On push, wait for release to finish first. On PR, run immediately.
+    needs: [release]
+    if: always() && (needs.release.result == 'success' || needs.release.result == 'skipped')
     uses: ./.github/workflows/ci.yml
 
   docker:
     name: Docker Image (Scan & Push)
     needs: ci
+    if: always() && needs.ci.result == 'success'
     uses: ./.github/workflows/docker.yml
     with:
       push: ${{ github.event_name != 'pull_request' }}
@@ -25,13 +35,13 @@ jobs:
   deploy:
     name: Deploy to ArgoCD
     needs: docker
-    if: github.event_name != 'pull_request'
+    if: always() && needs.docker.result == 'success' && github.event_name != 'pull_request'
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
 
   notify:
     name: Send Notifications
-    needs: [ci, docker, deploy]
+    needs: [release, ci, docker, deploy]
     if: always()
     uses: ./.github/workflows/notify.yml
     secrets: inherit
