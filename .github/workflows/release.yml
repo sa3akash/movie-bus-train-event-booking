@@ -32,9 +32,10 @@ jobs:
         uses: mathieudutour/github-tag-action@v6.1
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          # Conventional Commits mode: only bump when commit message demands it
-          # fix: → patch | feat: → minor | feat!: or BREAKING CHANGE: → major
-          default_bump: false
+          # Every push bumps patch by default (e.g. v1.0.4 → v1.0.5)
+          # Use conventional commits to override:
+          # feat: → minor | feat!: / BREAKING CHANGE: → major
+          default_bump: patch
           release_branches: main
 
       - name: Create GitHub Release
