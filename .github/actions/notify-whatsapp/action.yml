@@ -1,0 +1,44 @@
+name: 'Notify WhatsApp'
+description: 'Sends a WhatsApp message via Twilio based on job status'
+inputs:
+  status:
+    description: 'Status of the job (success, failure)'
+    required: true
+  twilio_account_sid:
+    description: 'Twilio Account SID'
+    required: true
+  twilio_auth_token:
+    description: 'Twilio Auth Token'
+    required: true
+  from_number:
+    description: 'Twilio WhatsApp Sender Number'
+    required: true
+  to_number:
+    description: 'Recipient WhatsApp Number'
+    required: true
+  app_name:
+    description: 'Name of the application or context'
+    required: false
+    default: ${{ github.event.repository.name }}
+runs:
+  using: "composite"
+  steps:
+    - name: Notify Success
+      if: inputs.status == 'success'
+      shell: bash
+      run: |
+        curl -X POST https://api.twilio.com/2010-04-01/Accounts/${{ inputs.twilio_account_sid }}/Messages.json \
+        --data-urlencode "From=whatsapp:${{ inputs.from_number }}" \
+        --data-urlencode "To=whatsapp:${{ inputs.to_number }}" \
+        --data-urlencode "Body=✅ Success: Workflow ${{ github.workflow }} for ${{ inputs.app_name }} succeeded." \
+        -u ${{ inputs.twilio_account_sid }}:${{ inputs.twilio_auth_token }}
+
+    - name: Notify Failure
+      if: inputs.status == 'failure'
+      shell: bash
+      run: |
+        curl -X POST https://api.twilio.com/2010-04-01/Accounts/${{ inputs.twilio_account_sid }}/Messages.json \
+        --data-urlencode "From=whatsapp:${{ inputs.from_number }}" \
+        --data-urlencode "To=whatsapp:${{ inputs.to_number }}" \
+        --data-urlencode "Body=❌ Failure: Workflow ${{ github.workflow }} for ${{ inputs.app_name }} failed." \
+        -u ${{ inputs.twilio_account_sid }}:${{ inputs.twilio_auth_token }}

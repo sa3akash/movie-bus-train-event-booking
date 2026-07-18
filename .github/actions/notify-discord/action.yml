@@ -1,0 +1,61 @@
+name: 'Notify Discord'
+description: 'Sends a rich embed notification to Discord based on job status'
+inputs:
+  status:
+    description: 'Status of the job (success, failure)'
+    required: true
+  webhook_url:
+    description: 'Discord webhook URL'
+    required: true
+  app_name:
+    description: 'Name of the application or context'
+    required: false
+    default: ${{ github.event.repository.name }}
+runs:
+  using: "composite"
+  steps:
+    - name: Notify Success
+      if: inputs.status == 'success'
+      shell: bash
+      run: |
+        curl -X POST ${{ inputs.webhook_url }} \
+        -H 'Content-Type: application/json' \
+        -d '{
+          "embeds": [
+            {
+              "title": "✅ Workflow Success",
+              "description": "**${{ inputs.app_name }}** workflow completed successfully!",
+              "color": 35286,
+              "fields": [
+                { "name": "Triggered by", "value": "${{ github.actor }}", "inline": true },
+                { "name": "Workflow", "value": "${{ github.workflow }}", "inline": true },
+                { "name": "Repository", "value": "${{ github.repository }}", "inline": true },
+                { "name": "Run URL", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "inline": false }
+              ],
+              "footer": { "text": "${{ github.repository }}" }
+            }
+          ]
+        }'
+
+    - name: Notify Failure
+      if: inputs.status == 'failure'
+      shell: bash
+      run: |
+        curl -X POST ${{ inputs.webhook_url }} \
+        -H 'Content-Type: application/json' \
+        -d '{
+          "embeds": [
+            {
+              "title": "❌ Workflow Failed",
+              "description": "**${{ inputs.app_name }}** workflow has failed.",
+              "color": 16711680,
+              "fields": [
+                { "name": "Triggered by", "value": "${{ github.actor }}", "inline": true },
+                { "name": "Workflow", "value": "${{ github.workflow }}", "inline": true },
+                { "name": "Repository", "value": "${{ github.repository }}", "inline": true },
+                { "name": "Run URL", "value": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}", "inline": false }
+              ],
+              "footer": { "text": "${{ github.repository }}" }
+            }
+          ]
+        }'

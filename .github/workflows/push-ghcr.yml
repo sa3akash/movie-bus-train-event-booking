@@ -43,17 +43,26 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
 
       # --- NOTIFICATIONS ON FAILURE ---
-      - name: Notify Discord on Failure
-        if: failure()
-        run: curl -H "Content-Type: application/json" -d '{"content": "❌ **Failure**: `${{ github.workflow }}` failed. Could not push to GHCR!"}' ${{ secrets.DISCORD_WEBHOOK }}
-      - name: Notify Slack on Failure
-        if: failure()
-        run: curl -X POST -H 'Content-type: application/json' --data '{"text":"❌ *Failure*: `${{ github.workflow }}` failed. Could not push to GHCR!"}' ${{ secrets.SLACK_WEBHOOK }}
-      - name: Notify WhatsApp on Failure
-        if: failure()
-        run: |
-          curl -X POST https://api.twilio.com/2010-04-01/Accounts/${{ secrets.TWILIO_ACCOUNT_SID }}/Messages.json \
-          --data-urlencode "From=whatsapp:${{ secrets.TWILIO_WHATSAPP_NUMBER }}" \
-          --data-urlencode "To=whatsapp:${{ secrets.YOUR_WHATSAPP_NUMBER }}" \
-          --data-urlencode "Body=❌ Failure: ${{ github.workflow }} failed. Could not push to GHCR!" \
-          -u ${{ secrets.TWILIO_ACCOUNT_SID }}:${{ secrets.TWILIO_AUTH_TOKEN }}
+      # - name: Notify Discord
+      #   uses: ./.github/actions/notify-discord
+      #   if: failure()
+      #   with:
+      #     status: failure
+      #     webhook_url: ${{ secrets.DISCORD_WEBHOOK }}
+
+      # - name: Notify Slack
+      #   uses: ./.github/actions/notify-slack
+      #   if: failure()
+      #   with:
+      #     status: failure
+      #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+
+      # - name: Notify WhatsApp
+      #   uses: ./.github/actions/notify-whatsapp
+      #   if: failure()
+      #   with:
+      #     status: failure
+      #     twilio_account_sid: ${{ secrets.TWILIO_ACCOUNT_SID }}
+      #     twilio_auth_token: ${{ secrets.TWILIO_AUTH_TOKEN }}
+      #     from_number: ${{ secrets.TWILIO_WHATSAPP_NUMBER }}
+      #     to_number: ${{ secrets.YOUR_WHATSAPP_NUMBER }}

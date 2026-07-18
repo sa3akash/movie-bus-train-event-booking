@@ -1,0 +1,71 @@
+name: 'Notify Slack'
+description: 'Sends a rich block notification to Slack based on job status'
+inputs:
+  status:
+    description: 'Status of the job (success, failure)'
+    required: true
+  webhook_url:
+    description: 'Slack webhook URL'
+    required: true
+  app_name:
+    description: 'Name of the application or context'
+    required: false
+    default: ${{ github.event.repository.name }}
+runs:
+  using: "composite"
+  steps:
+    - name: Notify Success
+      if: inputs.status == 'success'
+      shell: bash
+      run: |
+        curl -X POST ${{ inputs.webhook_url }} \
+        -H 'Content-Type: application/json' \
+        -d '{
+          "text": "✅ *Workflow Success*",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "✅ *${{ inputs.app_name }}* workflow completed successfully!"
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                { "type": "mrkdwn", "text": "*Triggered by:*\n${{ github.actor }}" },
+                { "type": "mrkdwn", "text": "*Workflow:*\n${{ github.workflow }}" },
+                { "type": "mrkdwn", "text": "*Repository:*\n${{ github.repository }}" },
+                { "type": "mrkdwn", "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>" }
+              ]
+            }
+          ]
+        }'
+
+    - name: Notify Failure
+      if: inputs.status == 'failure'
+      shell: bash
+      run: |
+        curl -X POST ${{ inputs.webhook_url }} \
+        -H 'Content-Type: application/json' \
+        -d '{
+          "text": "❌ *Workflow Failed*",
+          "blocks": [
+            {
+              "type": "section",
+              "text": {
+                "type": "mrkdwn",
+                "text": "❌ *${{ inputs.app_name }}* workflow has failed."
+              }
+            },
+            {
+              "type": "section",
+              "fields": [
+                { "type": "mrkdwn", "text": "*Triggered by:*\n${{ github.actor }}" },
+                { "type": "mrkdwn", "text": "*Workflow:*\n${{ github.workflow }}" },
+                { "type": "mrkdwn", "text": "*Repository:*\n${{ github.repository }}" },
+                { "type": "mrkdwn", "text": "*Run:*\n<${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>" }
+              ]
+            }
+          ]
+        }'
