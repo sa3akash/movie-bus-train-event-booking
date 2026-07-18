@@ -12,6 +12,8 @@ jobs:
     if: github.event_name == 'push'
     uses: ./.github/workflows/release.yml
     secrets: inherit
+    permissions:
+      contents: write
 
   ci:
     name: Continuous Integration (Lint, Test & Build)
